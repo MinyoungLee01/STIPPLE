@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="STIPPLE">
+<meta name="theme-color" content="#F8F4EE">
+<title>STIPPLE</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wan2land/d2coding@1.3.2/d2coding-ligature-subset.css">
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.26.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.26.0/mapbox-gl.js"></script>
+<style>
+  :root{
+    --black:#141414;
+    --white:#FEFEFE;
+    --deep-green:#404823;
+    --deep-red:#C31313;
+    --beige:#F8F4EE;
+    --deep-beige:#E8DDCF;
+    --margin:16px;
+    --shadow:0 2px 12px rgba(20,20,20,.14);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;overscroll-behavior:none;}
+  body{
+    font-family:'Pretendard',-apple-system,sans-serif;
+    background:#2a2a28;
+    display:flex;align-items:center;justify-content:center;
+    gap:48px;padding:24px;
+  }
+  .num{font-family:'D2Coding','D2Coding ligature',monospace;}
+
+  /* ---------- 기기 프레임 (데스크톱) ---------- */
+  .stage{flex:none;}
+  .phone{
+    position:relative;width:402px;height:874px;
+    background:var(--beige);border-radius:44px;overflow:hidden;
+    box-shadow:0 24px 60px rgba(0,0,0,.45);
+    transform-origin:top left;
+    --safe-bottom:0px;
+    --lift:0px;
+  }
+
+  /* ---------- 조작 안내 (데스크톱 전용) ---------- */
+  .guide{
+    width:336px;flex:none;color:#E8DDCF;
+    font-size:17px;line-height:1.7;letter-spacing:-.3px;
+  }
+  .guide h1{
+    font-size:24px;font-weight:700;color:var(--white);
+    margin-bottom:7px;letter-spacing:-.72px;
+  }
+  .guide .sub{font-size:16px;color:#9A9A92;margin-bottom:31px;}
+  .guide h2{
+    font-size:14px;font-weight:600;color:#9A9A92;letter-spacing:.4px;
+    margin:26px 0 12px;text-transform:uppercase;
+  }
+  .guide ul{list-style:none;display:flex;flex-direction:column;gap:11px;}
+  .guide li{display:flex;gap:12px;align-items:baseline;}
+  .guide .k{
+    flex:none;min-width:113px;color:var(--white);font-weight:600;font-size:16px;
+  }
+  .guide .v{color:#C9C7BE;font-size:16px;}
+  .guide .note{
+    margin-top:31px;padding-top:22px;border-top:1px solid rgba(232,221,207,.18);
+    font-size:14px;line-height:1.75;color:#8F8F88;
+  }
+
+  /* ---------- 모바일: 화면 전체 ---------- */
+  @media (max-width:700px), (display-mode:standalone){
+    body{padding:0;gap:0;background:var(--beige);}
+    .guide{display:none;}
+    .stage{width:100vw !important;height:100dvh !important;}
+    .phone{
+      width:100vw;height:100dvh;
+      border-radius:0;box-shadow:none;transform:none !important;
+      --safe-bottom:env(safe-area-inset-bottom, 0px);
+    }
+    .statusbar{display:none;}
+    .topbar,.navbar{top:calc(env(safe-area-inset-top, 12px) + 12px);}
+  }
+
+  /* ---------- 지도 ---------- */
+  #map{position:absolute;inset:0;}
+  .mapboxgl-ctrl-bottom-left,.mapboxgl-ctrl-bottom-right{display:none;}
+  #mapFallback{
+    position:absolute;inset:0;background:var(--deep-beige);
+    display:none;align-items:center;justify-content:center;text-align:center;
+    color:var(--deep-green);font-size:13px;line-height:1.7;padding:40px;
+  }
+
+  /* ---------- 상태바 ---------- */
+  .statusbar{
+    position:absolute;top:0;left:0;right:0;height:54px;z-index:40;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 28px 0;pointer-events:none;color:var(--black);
+  }
+  .statusbar .time{font-size:16px;font-weight:600;letter-spacing:-.2px;}
+  .statusbar .icons{display:flex;align-items:center;gap:6px;}
+
+  /* ---------- 상단 칩 ---------- */
+  .topbar{
+    position:absolute;top:58px;left:0;right:0;z-index:30;
+    padding:0 var(--margin);
+    display:flex;align-items:flex-start;justify-content:space-between;
+  }
+  .chips{display:flex;gap:6px;}
+  .chip{
+    height:34px;padding:0 14px;border-radius:17px;border:none;
+    background:var(--white);color:var(--black);
+    font-family:inherit;font-size:14px;font-weight:500;letter-spacing:-.3px;
+    display:inline-flex;align-items:center;gap:4px;cursor:pointer;
+    box-shadow:var(--shadow);transition:background .18s ease,color .18s ease;
+  }
+  .chip.on{background:var(--deep-green);color:var(--white);}
+  .chip .caret{transition:transform .2s ease;}
+  .chip.open .caret{transform:rotate(180deg);}
+
+  .period{position:relative;display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
+  .period-list{display:none;flex-direction:column;gap:8px;align-items:flex-end;}
+  .period-list.show{display:flex;}
+  .period-list .chip{animation:drop .22s ease backwards;}
+  .period-list .chip:nth-child(1){animation-delay:.00s;}
+  .period-list .chip:nth-child(2){animation-delay:.04s;}
+  .period-list .chip:nth-child(3){animation-delay:.08s;}
+  .period-list .chip:nth-child(4){animation-delay:.12s;}
+  @keyframes drop{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:none;}}
+
+  /* ---------- 내비게이션 상단바 ---------- */
+  .navbar{
+    position:absolute;top:58px;left:0;right:0;z-index:30;
+    padding:0 var(--margin);display:none;
+    align-items:center;justify-content:space-between;
+  }
+  .state-nav .navbar{display:flex;}
+  .state-nav .topbar{display:none;}
+  .nav-pill{
+    margin:0 auto 0 56px;height:34px;padding:0 16px;border-radius:17px;
+    background:var(--white);box-shadow:var(--shadow);
+    display:inline-flex;align-items:center;
+    font-size:14px;font-weight:600;letter-spacing:-.3px;color:var(--black);
+  }
+  .toggle{
+    flex:none;width:52px;height:31px;border-radius:16px;border:none;
+    background:var(--deep-green);cursor:pointer;position:relative;
+    transition:background .22s ease;box-shadow:var(--shadow);
+  }
+  .toggle::after{
+    content:'';position:absolute;top:3px;left:24px;
+    width:25px;height:25px;border-radius:50%;background:var(--white);
+    transition:left .22s cubic-bezier(.3,.9,.4,1);
+    box-shadow:0 1px 3px rgba(20,20,20,.2);
+  }
+  .toggle.off{background:var(--deep-beige);}
+  .toggle.off::after{left:3px;}
+
+  /* ---------- 마커 ---------- */
+  .rec{cursor:pointer;}
+  .rec .hit{                       /* 클릭 영역 — 아이콘보다 넉넉하게 */
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:20px;height:20px;border-radius:50%;
+    transition:width .22s ease,height .22s ease;
+  }
+  .zoomed .rec .hit{width:44px;height:44px;}
+  .rec.sel .hit{width:54px;height:54px;}
+  .rec .dot{
+    width:9px;height:9px;border-radius:50%;background:var(--deep-green);
+    transition:all .22s cubic-bezier(.3,.9,.4,1);
+  }
+  .rec.red .dot{background:var(--deep-red);}
+  .rec .ico{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.3);
+    width:32px;height:32px;border-radius:50%;background:var(--deep-green);
+    display:flex;align-items:center;justify-content:center;
+    opacity:0;pointer-events:none;
+    transition:all .22s cubic-bezier(.3,.9,.4,1);
+    box-shadow:0 2px 8px rgba(20,20,20,.2);
+  }
+  .rec.red .ico{background:var(--deep-red);}
+  .zoomed .rec .dot{opacity:0;transform:scale(.3);}
+  .zoomed .rec .ico{opacity:1;transform:translate(-50%,-50%) scale(1);}
+  .rec.sel .dot{opacity:0;transform:scale(.3);}
+  .rec.sel .ico{
+    opacity:1;width:44px;height:44px;
+    transform:translate(-50%,-50%) scale(1);
+    border:3px solid var(--white);
+    box-shadow:0 3px 14px rgba(20,20,20,.3);
+  }
+  .rec.sel .ico svg{width:24px;height:24px;}
+
+  /* 내 위치 */
+  .me{
+    position:absolute;z-index:19;cursor:pointer;
+    transform:translate(-50%,-50%);opacity:0;
+    transition:opacity .2s ease;
+  }
+  .me.ready{opacity:1;}
+  .me-circle{
+    width:40px;height:40px;border-radius:50%;background:var(--white);
+    border:2.5px solid var(--deep-green);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 10px rgba(20,20,20,.25);
+  }
+  .me-arrow{transform-origin:center;transition:transform .3s ease;}
+
+  /* 중앙 핀 */
+  #centerPin{
+    position:absolute;left:50%;top:50%;z-index:20;
+    transform:translate(-50%,-100%);pointer-events:none;
+    opacity:0;transition:opacity .2s ease;
+  }
+  #centerPin.show{opacity:1;}
+
+  /* 좌표 / 거리 라벨 */
+  .label{
+    position:absolute;z-index:22;pointer-events:none;
+    background:var(--white);color:var(--black);
+    padding:6px 10px;border-radius:14px;box-shadow:var(--shadow);
+    font-size:11px;white-space:nowrap;letter-spacing:-.2px;
+    opacity:0;transition:opacity .18s ease;
+  }
+  .label.show{opacity:1;}
+  .label.tail::after{
+    content:'';position:absolute;bottom:-4px;left:50%;
+    width:9px;height:9px;background:var(--white);
+    transform:translateX(-50%) rotate(45deg);border-radius:1px;
+  }
+  #distLabel{background:transparent;box-shadow:none;font-weight:600;font-size:12px;}
+
+  /* 점선 */
+  #lineLayer{
+    position:absolute;top:0;left:0;width:100%;height:100%;
+    z-index:18;pointer-events:none;overflow:visible;
+  }
+
+  /* ---------- 우측 버튼 ---------- */
+  .side{
+    position:absolute;right:var(--margin);
+    bottom:calc(108px + var(--safe-bottom) + var(--lift));z-index:30;
+    display:flex;flex-direction:column;gap:16px;
+    transition:bottom .32s cubic-bezier(.32,.72,.3,1);
+  }
+  .fab{
+    width:52px;height:52px;border-radius:50%;border:none;background:var(--white);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    box-shadow:var(--shadow);transition:transform .15s ease;
+  }
+  .fab:active{transform:scale(.92);}
+  #fabStop{display:none;}
+  .state-sel #fabPencil,.state-sel #fabRoute{display:none;}
+  .state-nav #fabStop{display:flex;}
+  .state-nav #fabRoute{display:none;}
+
+  /* ---------- 좌측 하단 ---------- */
+  .compass{
+    position:absolute;left:var(--margin);
+    bottom:calc(157px + var(--safe-bottom) + var(--lift));z-index:30;
+    width:52px;height:52px;border-radius:50%;background:var(--white);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:var(--shadow);cursor:pointer;
+    transition:bottom .32s cubic-bezier(.32,.72,.3,1);
+  }
+  .compass svg{transition:transform .3s ease;}
+  .temp{
+    position:absolute;left:var(--margin);
+    bottom:calc(109px + var(--safe-bottom) + var(--lift));z-index:30;
+    height:30px;padding:0 12px;border-radius:15px;background:var(--white);
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:13px;font-weight:500;color:var(--black);box-shadow:var(--shadow);
+    transition:bottom .32s cubic-bezier(.32,.72,.3,1);
+  }
+
+  /* ---------- 하단 탭 ---------- */
+  .tabbar{
+    position:absolute;left:0;right:0;bottom:0;z-index:35;
+    height:calc(94px + var(--safe-bottom));
+    background:var(--white);display:flex;align-items:flex-start;
+    padding-top:14px;border-top:1px solid rgba(20,20,20,.07);
+  }
+  .tab{
+    flex:1;display:flex;align-items:center;justify-content:center;
+    background:none;border:none;cursor:pointer;padding:10px 0;
+    color:#B9B6B0;transition:color .18s ease;
+  }
+  .tab.on{color:var(--deep-green);}
+  .home-indicator{
+    position:absolute;bottom:calc(9px + var(--safe-bottom));left:50%;
+    transform:translateX(-50%);
+    width:140px;height:5px;border-radius:3px;background:var(--black);opacity:.85;
+  }
+
+  /* ---------- 하단 시트 (접힘 ↔ 펼침이 하나로 이어짐) ---------- */
+  .sheet{
+    position:absolute;left:0;right:0;bottom:0;height:100%;z-index:34;
+    background:var(--beige);border-radius:22px 22px 0 0;overflow:hidden;
+    box-shadow:0 -6px 24px rgba(20,20,20,.12);
+    transform:translateY(100%);
+    transition:transform .34s cubic-bezier(.32,.72,.3,1);
+  }
+  .sheet.full{z-index:42;}
+  .sheet.dragging{transition:none;}
+
+  .sheet-scroll{
+    height:100%;overflow:hidden;overscroll-behavior:contain;
+  }
+  .sheet.full .sheet-scroll{overflow-y:auto;}
+
+  .sheet-top{
+    background:var(--white);border-radius:22px 22px 0 0;
+    padding:0 var(--margin) 18px;cursor:grab;touch-action:none;
+  }
+  .grab{height:22px;display:flex;align-items:center;justify-content:center;}
+  .grab span{width:40px;height:4px;border-radius:2px;background:#CFC9BE;}
+  .cta{display:flex;gap:10px;margin-top:4px;}
+  .btn{
+    flex:1;height:46px;border:none;border-radius:12px;cursor:pointer;
+    font-family:inherit;font-size:16px;font-weight:600;letter-spacing:-.4px;
+    transition:transform .14s ease;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn.beige{background:var(--deep-beige);color:var(--black);}
+  .btn.green{background:var(--deep-green);color:var(--white);}
+
+  .rec-head{display:flex;align-items:center;gap:8px;margin-top:20px;}
+  .rec-badge{
+    flex:none;width:24px;height:24px;border-radius:50%;background:var(--deep-green);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .rec-badge.red{background:var(--deep-red);}
+  .rec-head h3{font-size:19px;font-weight:700;letter-spacing:-.5px;color:var(--black);}
+  .star{
+    margin-left:auto;background:none;border:none;cursor:pointer;
+    color:#B9B6B0;display:flex;padding:4px;transition:color .18s ease;
+  }
+  .star.on{color:var(--deep-green);}
+  .rec-desc{
+    margin-top:10px;font-size:15px;line-height:1.55;color:var(--black);
+    letter-spacing:-.3px;
+  }
+  .rec-meta{margin-top:12px;font-size:13px;color:#9A968E;letter-spacing:-.2px;}
+  .rec-meta span{margin:0 7px;color:#CFC9BE;}
+
+  .sheet-cards{
+    background:var(--beige);
+    padding:14px var(--margin) calc(120px + var(--safe-bottom));
+  }
+  .card{background:var(--white);border-radius:16px;padding:18px 16px;margin-bottom:14px;}
+  .card-head{display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+  .card-head h4{font-size:17px;font-weight:700;letter-spacing:-.4px;}
+  .card-head .arrow{color:#B9B6B0;display:flex;}
+  .card .line{margin-top:12px;font-size:14px;color:var(--black);letter-spacing:-.2px;}
+  .card .dim{margin-top:6px;font-size:13px;color:#9A968E;}
+  .card .sep{margin:0 6px;color:#DAD5CB;}
+  .card .sub{
+    margin-top:10px;display:flex;align-items:center;justify-content:space-between;
+    font-size:13px;color:#9A968E;
+  }
+  .review{padding:14px 0;border-bottom:1px solid #F0ECE4;}
+  .review .who{font-size:14px;font-weight:600;letter-spacing:-.3px;}
+  .review .stars{margin-top:5px;font-size:13px;letter-spacing:1px;color:var(--black);}
+  .review .txt{margin-top:4px;font-size:14px;color:var(--black);letter-spacing:-.2px;}
+  .review-btn{
+    width:100%;height:46px;margin-top:14px;border:none;border-radius:12px;
+    background:var(--beige);color:#9A968E;font-family:inherit;
+    font-size:15px;font-weight:600;cursor:pointer;
+  }
+
+  /* 스크롤하면 나타나는 상단 헤더 / 하단 버튼 */
+  .fhdr{
+    position:absolute;top:0;left:0;right:0;height:92px;z-index:3;
+    background:var(--white);padding:44px var(--margin) 0;
+    display:flex;align-items:center;
+    opacity:0;pointer-events:none;transition:opacity .2s ease;
+    border-bottom:1px solid #F0ECE4;cursor:grab;touch-action:none;
+  }
+  .sheet.compact .fhdr{opacity:1;pointer-events:auto;}
+  .fhdr .back{background:none;border:none;cursor:pointer;padding:6px;display:flex;color:var(--black);}
+  .fhdr .htitle{
+    position:absolute;left:0;right:0;top:44px;height:48px;
+    display:flex;align-items:center;justify-content:center;gap:7px;
+    pointer-events:none;padding:0 52px;
+  }
+  .fhdr .htitle h3{font-size:16px;font-weight:700;letter-spacing:-.4px;}
+  .fhdr .hdot{width:8px;height:8px;border-radius:50%;background:var(--deep-green);}
+  .fhdr .hdot.red{background:var(--deep-red);}
+  .fhdr .hstar{position:absolute;right:var(--margin);top:54px;}
+
+  .fbar{
+    position:absolute;left:0;right:0;bottom:0;z-index:3;
+    display:flex;gap:10px;
+    padding:12px var(--margin) calc(18px + var(--safe-bottom));
+    background:var(--beige);border-top:1px solid #EDE8DF;
+    opacity:0;pointer-events:none;transition:opacity .2s ease;
+  }
+  .sheet.compact .fbar{opacity:1;pointer-events:auto;}
+
+  /* ---------- 팝업 (화면 정중앙) ---------- */
+  .scrim{
+    position:absolute;inset:0;z-index:44;background:rgba(20,20,20,.26);
+    opacity:0;pointer-events:none;transition:opacity .22s ease;
+  }
+  .scrim.show{opacity:1;pointer-events:auto;}
+  .popup{
+    position:absolute;inset:0;z-index:45;
+    display:flex;align-items:center;justify-content:center;
+    padding:0 var(--margin);pointer-events:none;
+  }
+  .popup-card{
+    width:100%;background:var(--white);border-radius:16px;padding:18px 16px 16px;
+    box-shadow:0 12px 40px rgba(20,20,20,.26);
+    opacity:0;transform:translateY(14px) scale(.98);
+    transition:opacity .22s ease,transform .22s ease;
+  }
+  .popup.show{pointer-events:auto;}
+  .popup.show .popup-card{opacity:1;transform:none;}
+  .popup .ptop{display:flex;align-items:center;justify-content:space-between;}
+  .popup h4{font-size:17px;font-weight:700;letter-spacing:-.4px;}
+  .popup .close{background:none;border:none;cursor:pointer;color:var(--black);display:flex;padding:4px;}
+  .popup p{margin-top:8px;font-size:14px;color:#8E8A82;letter-spacing:-.3px;line-height:1.5;}
+  .popup .pbtns{display:flex;gap:10px;margin-top:16px;}
+  .popup .btn{height:44px;font-size:15px;}
+</style>
+</head>
+<body>
+
+<aside class="guide">
+  <h1>STIPPLE</h1>
+  <p class="sub">탐사 기록 및 내비게이션 — 지도 메인 화면</p>
+
+  <h2>지도 조작</h2>
+  <ul>
+    <li><span class="k">확대 / 축소</span><span class="v">마우스 휠 · 트랙패드 핀치</span></li>
+    <li><span class="k">이동</span><span class="v">왼쪽 버튼 드래그</span></li>
+    <li><span class="k">시점 변경</span><span class="v">오른쪽 버튼 드래그</span></li>
+  </ul>
+
+  <h2>인터랙션</h2>
+  <ul>
+    <li><span class="k">기록 선택</span><span class="v">지도 위의 점 클릭</span></li>
+    <li><span class="k">상세 보기</span><span class="v">하단 요약을 위로 끌어올림</span></li>
+    <li><span class="k">경로 안내</span><span class="v">도착 → 최적 경로 생성</span></li>
+    <li><span class="k">주변 숨기기</span><span class="v">안내 중 오른쪽 위 토글</span></li>
+    <li><span class="k">안내 종료</span><span class="v">정지 버튼</span></li>
+    <li><span class="k">유형 필터</span><span class="v">상단 칩 선택</span></li>
+    <li><span class="k">기간 필터</span><span class="v">오른쪽 위 기간 칩</span></li>
+    <li><span class="k">내 좌표</span><span class="v">화살표 아이콘 클릭</span></li>
+  </ul>
+
+  <p class="note">휴대폰에서 열면 안내 없이 전체 화면으로 표시돼요.<br>
+  iOS는 공유 → 홈 화면에 추가하면 주소창 없이 볼 수 있어요.</p>
+</aside>
+
+<div class="stage" id="stage">
+<div class="phone state-idle" id="phone">
+  <div id="map"></div>
+  <div id="mapFallback">
+    지도를 불러오지 못했어요.<br>
+    이 파일을 내 컴퓨터 브라우저에서 열면<br>정상적으로 표시돼요.
+  </div>
+
+  <svg id="lineLayer" xmlns="http://www.w3.org/2000/svg">
+    <line id="dashLine" x1="0" y1="0" x2="0" y2="0"
+          stroke="#141414" stroke-width="1.8" stroke-dasharray="3 4"
+          stroke-linecap="round" opacity="0"/>
+  </svg>
+
+  <div id="centerPin">
+    <svg width="26" height="34" viewBox="0 0 26 34" fill="none">
+      <path fill-rule="evenodd" clip-rule="evenodd"
+            d="M13 0C5.82 0 0 5.82 0 13c0 9.1 11.3 19.7 11.78 20.15a1.8 1.8 0 0 0 2.44 0C14.7 32.7 26 22.1 26 13 26 5.82 20.18 0 13 0Zm0 17.2a4.6 4.6 0 1 0 0-9.2 4.6 4.6 0 0 0 0 9.2Z"
+            fill="#C31313"/>
+    </svg>
+  </div>
+
+  <div class="me" id="meIcon">
+    <div class="me-circle">
+      <svg class="me-arrow" width="20" height="20" viewBox="0 0 24 24">
+        <path d="M12 3.5 18.5 20 12 16.2 5.5 20 12 3.5Z" fill="#404823"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="label tail num" id="meLabel"></div>
+  <div class="label tail num" id="pinLabel"></div>
+  <div class="label num" id="distLabel"></div>
+
+  <!-- 상태바 -->
+  <div class="statusbar">
+    <span class="time">1:23</span>
+    <span class="icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 11.5 5.6 8.8a3.6 3.6 0 0 1 4.8 0L8 11.5Zm-4.4-5a7 7 0 0 1 8.8 0l-1.5 1.7a4.8 4.8 0 0 0-5.8 0L3.6 6.5ZM.9 3.4a11 11 0 0 1 14.2 0l-1.5 1.7a8.8 8.8 0 0 0-11.2 0L.9 3.4Z"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="18" height="8" rx="2" fill="currentColor"/><path d="M23 4.2v3.6c.9-.3 1.4-.9 1.4-1.8s-.5-1.5-1.4-1.8Z" fill="currentColor" opacity=".4"/></svg>
+    </span>
+  </div>
+
+  <!-- 상단 칩 -->
+  <div class="topbar">
+    <div class="chips" id="typeChips">
+      <button class="chip" data-type="전체">전체</button>
+      <button class="chip" data-type="도움">도움</button>
+      <button class="chip" data-type="위험">위험</button>
+      <button class="chip" data-type="저장">저장</button>
+    </div>
+    <div class="period">
+      <button class="chip" id="periodBtn">
+        <span id="periodLabel">기간</span>
+        <svg class="caret" width="11" height="7" viewBox="0 0 11 7" fill="none"><path d="M1 1.2 5.5 5.5 10 1.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="period-list" id="periodList">
+        <button class="chip" data-period="전체">전체</button>
+        <button class="chip" data-period="일주일">일주일</button>
+        <button class="chip" data-period="한달">한달</button>
+        <button class="chip" data-period="1년">1년</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 내비게이션 상단바 -->
+  <div class="navbar">
+    <span class="nav-pill" id="navPill">목적지까지 900m</span>
+    <button class="toggle" id="navToggle" title="주변 기록 표시"></button>
+  </div>
+
+  <!-- 우측 버튼 -->
+  <div class="side">
+    <button class="fab" id="fabStop" title="안내 종료">
+      <svg width="20" height="20" viewBox="0 0 24 24"><rect x="4.5" y="4.5" width="15" height="15" rx="2.4" fill="#141414"/></svg>
+    </button>
+    <button class="fab" id="fabLocate" title="내 위치">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="1.7">
+        <circle cx="12" cy="12" r="6.2"/><circle cx="12" cy="12" r="2.4" fill="#141414" stroke="none"/>
+        <path d="M12 1.6v3.2M12 19.2v3.2M22.4 12h-3.2M4.8 12H1.6" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <button class="fab" id="fabPencil" title="기록 작성">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16.8 3.4a2.3 2.3 0 0 1 3.3 3.3L8.4 18.4l-4.3 1 1-4.3L16.8 3.4Z"/>
+      </svg>
+    </button>
+    <button class="fab" id="fabRoute" title="길찾기">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 19V11a3 3 0 0 1 3-3h11"/><path d="m14 4 5 4-5 4"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- 나침반 / 온도 -->
+  <div class="compass" id="compass">
+    <svg width="30" height="34" viewBox="0 0 30 34" fill="none">
+      <path d="M15 3 20 17H10L15 3Z" fill="#C31313"/>
+      <path d="M15 17 20 17 15 24 10 17Z" fill="#E8DDCF"/>
+      <text x="15" y="32" text-anchor="middle" font-family="Pretendard" font-size="11" font-weight="600" fill="#141414">N</text>
+    </svg>
+  </div>
+  <div class="temp">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3.2" fill="#C31313"/><path d="M8 .8v2M8 13.2v2M15.2 8h-2M2.8 8h-2M13.1 2.9l-1.4 1.4M4.3 11.7l-1.4 1.4M13.1 13.1l-1.4-1.4M4.3 4.3 2.9 2.9" stroke="#C31313" stroke-width="1.3" stroke-linecap="round"/></svg>
+    <span class="num">45</span>°C
+  </div>
+
+  <!-- 하단 탭 -->
+  <nav class="tabbar">
+    <button class="tab on">
+      <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9.2"/><path d="M12 2.8c-2.8 3-2.8 15.4 0 18.4M12 2.8c2.8 3 2.8 15.4 0 18.4M3 12h18"/></svg>
+    </button>
+    <button class="tab">
+      <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M5 4.5h14v15H5zM8.5 9h7M8.5 12.5h7M8.5 16h4"/></svg>
+    </button>
+    <button class="tab">
+      <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M18 8.6a6 6 0 1 0-12 0c0 6.4-2 8.4-2 8.4h16s-2-2-2-8.4"/><path d="M13.7 20.5a2 2 0 0 1-3.4 0"/></svg>
+    </button>
+    <button class="tab">
+      <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="8" r="3.8"/><path d="M4.5 20.2a7.5 7.5 0 0 1 15 0"/></svg>
+    </button>
+    <div class="home-indicator"></div>
+  </nav>
+
+  <!-- ===== 하단 시트 ===== -->
+  <div class="sheet" id="sheet">
+    <div class="sheet-scroll" id="sheetScroll">
+
+      <div class="sheet-top" id="sheetTop">
+        <div class="grab"><span></span></div>
+        <div class="cta">
+          <button class="btn beige" data-act="start">출발</button>
+          <button class="btn green" data-act="arrive">도착</button>
+        </div>
+        <div class="rec-head">
+          <span class="rec-badge" id="pBadge"></span>
+          <h3 id="pTitle"></h3>
+          <button class="star" data-star><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="m12 3.4 2.65 5.65 6.05.78-4.45 4.2 1.15 6.07L12 17.2l-5.4 2.9 1.15-6.07-4.45-4.2 6.05-.78L12 3.4Z"/></svg></button>
+        </div>
+        <p class="rec-desc" id="pDesc"></p>
+        <p class="rec-meta" id="pMeta"></p>
+      </div>
+
+      <div class="sheet-cards">
+        <div class="card">
+          <div class="card-head"><h4>위치 정보</h4>
+            <span class="arrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg></span>
+          </div>
+          <p class="line num" id="fCoord"></p>
+          <p class="dim">해발고도 <span id="fAlt">45m</span><span class="sep">|</span><span id="fClimate">극심한 건조 기후</span></p>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h4>기록자</h4>
+            <span class="arrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg></span>
+          </div>
+          <p class="line" style="font-weight:600">익명의 탐사자</p>
+          <p class="dim">신뢰 점수 9/10<span class="sep">|</span>탐사 기간 1년 이상<span class="sep">|</span>탐사 횟수 비공개</p>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h4>기록 평가</h4>
+            <span class="arrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg></span>
+          </div>
+          <div class="sub"><span>3개의 평가</span><span>최신순</span></div>
+          <div class="review"><p class="who">익명의 탐사자</p><p class="stars">★★★★★</p><p class="txt">감사합니다</p></div>
+          <div class="review"><p class="who">익명의 탐사자</p><p class="stars">★★★★★</p><p class="txt">감사합니다</p></div>
+          <div class="review"><p class="who">익명의 탐사자</p><p class="stars">★★★★★</p><p class="txt">감사합니다</p></div>
+          <button class="review-btn">기록 평가하기</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 스크롤 시 나타나는 헤더 -->
+    <div class="fhdr" id="fhdr">
+      <button class="back" id="sheetBack">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 5-7 7 7 7"/></svg>
+      </button>
+      <div class="htitle">
+        <span class="hdot" id="hDot"></span>
+        <h3 id="hTitle"></h3>
+      </div>
+      <button class="star hstar" data-star><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="m12 3.4 2.65 5.65 6.05.78-4.45 4.2 1.15 6.07L12 17.2l-5.4 2.9 1.15-6.07-4.45-4.2 6.05-.78L12 3.4Z"/></svg></button>
+    </div>
+
+    <!-- 스크롤 시 나타나는 하단 버튼 -->
+    <div class="fbar">
+      <button class="btn beige" data-act="start">출발</button>
+      <button class="btn green" data-act="arrive">도착</button>
+    </div>
+  </div>
+
+  <!-- ===== 팝업 ===== -->
+  <div class="scrim" id="scrim"></div>
+  <div class="popup" id="popup">
+    <div class="popup-card">
+      <div class="ptop">
+        <h4 id="popTitle"></h4>
+        <button class="close" id="popClose">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <p id="popDesc"></p>
+      <div class="pbtns">
+        <button class="btn beige" id="popLeft"></button>
+        <button class="btn green" id="popRight"></button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+/* ===================== 설정 ===================== */
+const TOKEN = 'pk.eyJ1IjoibXktMDAxIiwiYSI6ImNtb3RodHhrYzA1MmQyc24yaWxhdGhtbXEifQ.9EpvUvh45l7Oh19d3YItCA';
+const STYLE = 'mapbox://styles/my-001/cmotierjf001r01sxbba3aed1';
+
+/* 내 위치 — 아래 PLACES에서 한 곳을 골라 ME에 지정하면
+   기록 점 30여 개도 같은 간격을 유지한 채 함께 옮겨가요. */
+const PLACES = {
+  sanblas  : { lng:-105.2600, lat: 21.5300 },  // 산블라스(나야리트) — 맹그로브 사이 굽이치는 강, 뒤로 산, 태평양 해안
+  chacahua : { lng: -97.6600, lat: 15.9700 },  // 차카우아(오아하카) — 석호와 가느다란 수로, 해안 마을
+  centla   : { lng: -92.5400, lat: 18.4200 },  // 센틀라 습지(타바스코) — 심하게 굽이치는 강, 걸프 해안
+  marismas : { lng:-105.6400, lat: 22.1800 },  // 마리스마스 나시오날레스(나야리트) — 맹그로브 수로망
+  chiapas  : { lng: -90.9300, lat: 16.6800 },  // 라칸돈(치아파스) — 큰 강과 밀림
+  copper   : { lng:-107.9000, lat: 27.2600 },  // 코퍼캐니언(치와와) — 협곡과 산
+  ansan    : { lng: 126.835425, lat: 37.297441 } // 기존 안산
+};
+const ME = PLACES.sanblas;
+
+/* 기록 데이터가 만들어진 기준점 — 건드리지 마세요 */
+const ORIGIN = { lng: 126.835425, lat: 37.297441 };
+const DX = ME.lng - ORIGIN.lng;
+const DY = ME.lat - ORIGIN.lat;
+
+const ICON_ZOOM = 14.6;
+const MAX_SCALE = 0.72;
+
+/* ===================== 아이콘 ===================== */
+const ICONS = {
+  bolt:   '<path d="M13 2 4 13h6l-1 9 9-11h-6l1-9Z" fill="#FEFEFE"/>',
+  drop:   '<path d="M12 2.6c3.4 4 6 7.1 6 10.2a6 6 0 0 1-12 0c0-3.1 2.6-6.2 6-10.2Z" fill="#FEFEFE"/>',
+  home:   '<path d="M3.8 10.6 12 4l8.2 6.6V20H3.8v-9.4Z" fill="#FEFEFE"/>',
+  plus:   '<path d="M12 5v14M5 12h14" stroke="#FEFEFE" stroke-width="2.4" stroke-linecap="round"/>',
+  alert:  '<path d="M12 6v7.4" stroke="#F8F4EE" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.5" fill="#F8F4EE"/>',
+  ban:    '<circle cx="12" cy="12" r="7" stroke="#F8F4EE" stroke-width="2.2" fill="none"/><path d="m7 17 10-10" stroke="#F8F4EE" stroke-width="2.2" stroke-linecap="round"/>',
+  gear:   '<circle cx="12" cy="12" r="3.2" fill="#FEFEFE"/><path d="M12 3.6v2.6M12 17.8v2.6M20.4 12h-2.6M6.2 12H3.6M18 6l-1.9 1.9M7.9 16.1 6 18M18 18l-1.9-1.9M7.9 7.9 6 6" stroke="#FEFEFE" stroke-width="1.9" stroke-linecap="round"/>',
+  pill:   '<rect x="4.6" y="9" width="14.8" height="6.4" rx="3.2" fill="#FEFEFE" transform="rotate(-40 12 12)"/>'
+};
+
+/* ===================== 기록 데이터 ===================== */
+const TEXT = {
+  drop:  [['다리 밑에 식수','생수병 여러개가 모아져있어요. 남겨놨으니 필요한 만큼 가져가세요.'],
+          ['우물터 발견','물이 맑아요. 끓여 먹으면 괜찮을 것 같습니다.'],
+          ['빗물 저장소','지붕에서 받은 물이 모여요. 비 온 다음 날이 좋아요.']],
+  home:  [['안전한 쉼터','바람 막을 곳이 있어요. 하룻밤 정도는 지낼 만합니다.'],
+          ['빈 창고','문이 잠겨있지 않아요. 안쪽은 비교적 깨끗합니다.'],
+          ['폐가 2층','1층은 물에 잠겼고 2층은 멀쩡해요.']],
+  bolt:  [['발전기 가동 중','하루 두 시간 정도 돌아갑니다. 충전 가능해요.'],
+          ['태양광 패널','낮에만 써요. 콘센트 두 개 남아있습니다.'],
+          ['전기 공급 지점','전압이 불안정하니 조심하세요.']],
+  plus:  [['응급 물품','붕대랑 소독약이 있어요. 필요한 만큼만 가져가세요.'],
+          ['구급상자 보관','벽장 안에 있습니다. 쓰고 나면 제자리에 둬주세요.'],
+          ['의약품 있음','유통기한 확인하고 쓰세요.']],
+  gear:  [['수리 도구 모음','공구 몇 가지 남겨뒀어요.'],
+          ['부품 창고','쓸 만한 나사와 전선이 있습니다.'],
+          ['정비 가능','작업대가 있어요. 밤에는 어두우니 주의하세요.']],
+  pill:  [['약국 잔여 물품','선반 안쪽에 남은 게 조금 있어요.'],
+          ['진통제 있음','수량이 많지 않으니 꼭 필요할 때만요.'],
+          ['해열제 발견','아이용도 섞여 있습니다.']],
+  ban:   [['통행 불가','길이 완전히 무너졌어요. 다른 길로 돌아가세요.'],
+          ['다리 붕괴','가운데가 내려앉았습니다. 건널 수 없어요.'],
+          ['길 막힘','잔해가 쌓여있어요. 차량은 못 지나갑니다.']],
+  alert: [['지반 침하 주의','걸을 때 땅이 꺼지는 느낌이 납니다.'],
+          ['오염 구역','물 색이 이상해요. 접촉하지 마세요.'],
+          ['야생동물 출몰','무리 지어 다닙니다. 해 진 뒤엔 피하세요.']]
+};
+
+const RAW = [
+  [126.8286,37.3010,'도움','home',   3], [126.8302,37.3014,'도움','drop',  12],
+  [126.8315,37.3008,'도움','bolt',   40], [126.8330,37.3016,'도움','plus',  5],
+  [126.8268,37.2996,'도움','gear',  180], [126.8292,37.2978,'도움','drop',  22],
+  [126.8338,37.2985,'도움','home',   60], [126.8352,37.2962,'도움','bolt',   9],
+  [126.8369,37.2958,'도움','plus',  300], [126.8382,37.2972,'도움','home',  15],
+  [126.8396,37.2949,'도움','drop',   45], [126.8408,37.2965,'도움','gear', 120],
+  [126.8276,37.2944,'저장','pill',   30], [126.8299,37.2931,'저장','home',  70],
+  [126.8324,37.2938,'저장','plus',    8], [126.8347,37.2925,'저장','drop', 200],
+  [126.8361,37.2941,'저장','bolt',   17], [126.8238,37.2968,'저장','gear',  95],
+  [126.8252,37.2921,'저장','home',  260], [126.8415,37.2932,'저장','pill',  11],
+  [126.8372,37.3028,'위험','ban',     2], [126.8384,37.3034,'위험','alert', 6],
+  [126.8391,37.3021,'위험','ban',    19], [126.8378,37.3012,'위험','alert',35],
+  [126.8243,37.2956,'위험','alert', 150], [126.8307,37.2952,'위험','ban',   27],
+  [126.8266,37.2908,'위험','ban',     4], [126.8402,37.2902,'위험','alert',88],
+  [126.8419,37.2918,'위험','ban',   210], [126.8225,37.3002,'위험','alert',14]
+];
+
+const RECORDS = RAW.map(([lng,lat,type,icon,days], i) => {
+  const pool = TEXT[icon];
+  const [title, desc] = pool[i % pool.length];
+  return { lng: lng + DX, lat: lat + DY, type, icon, days, title, desc,
+           alt:(20 + (i*7) % 90) + 'm',
+           climate:(i % 3 === 0) ? '극심한 건조 기후' : (i % 3 === 1 ? '잦은 돌풍 지대' : '야간 급랭 구역') };
+});
+RECORDS.unshift({
+  lng:126.831900 + DX, lat:37.298300 + DY, type:'도움', icon:'drop', days:0.083,
+  title:'다리 밑에 식수',
+  desc:'생수병 여러개가 모아져있어요. 남겨놨으니 필요한 만큼 가져가세요.',
+  alt:'45m', climate:'극심한 건조 기후'
+});
+
+const PERIOD_DAYS = { '전체':Infinity, '일주일':7, '한달':31, '1년':365 };
+
+/* ===================== 지도 ===================== */
+mapboxgl.accessToken = TOKEN;
+let map, markers = [];
+const phone  = document.getElementById('phone');
+const stage  = document.getElementById('stage');
+const meIcon = document.getElementById('meIcon');
+
+try {
+  map = new mapboxgl.Map({
+    container:'map', style:STYLE,
+    center:[ME.lng, ME.lat], zoom:13.6,
+    attributionControl:false, logoPosition:'bottom-left'
+  });
+  map.on('error', showFallback);
+  map.on('load', init);
+} catch(e){ showFallback(); }
+
+function showFallback(){
+  const fb = document.getElementById('mapFallback');
+  if(fb) fb.style.display = 'flex';
+}
+
+function init(){
+  applyBasemapConfig();
+
+  RECORDS.forEach((r, i) => {
+    const el = document.createElement('div');
+    el.className = 'rec' + (r.type === '위험' ? ' red' : '');
+    el.innerHTML =
+      '<div class="dot"></div>' +
+      '<div class="ico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none">' + ICONS[r.icon] + '</svg></div>' +
+      '<div class="hit"></div>';
+    el.addEventListener('click', e => { e.stopPropagation(); selectRecord(i); });
+    const m = new mapboxgl.Marker({ element: el }).setLngLat([r.lng, r.lat]).addTo(map);
+    markers.push({ marker:m, el, rec:r });
+  });
+
+  meIcon.addEventListener('click', e => { e.stopPropagation(); toggleMeLabel(); });
+  meIcon.classList.add('ready');
+
+  applyZoomState();
+  positionOverlay();
+  applyFilter();
+
+  map.on('zoom', applyZoomState);
+  map.on('move', onMove);
+  map.on('rotate', onRotate);
+  map.on('movestart', onMoveStart);
+  map.on('moveend', onMoveEnd);
+  map.on('click', () => { if(mode === 'selected') clearSelection(); });
+}
+
+function applyBasemapConfig(){
+  const cfg = {
+    lightPreset:'day', font:'DIN Pro',
+    showPlaceLabels:false, showRoadLabels:false,
+    showPointOfInterestLabels:false, showTransitLabels:false,
+    show3dObjects:false
+  };
+  for(const key in cfg){
+    try { map.setConfigProperty('basemap', key, cfg[key]); } catch(e){}
+  }
+}
+
+function applyZoomState(){
+  phone.classList.toggle('zoomed', map.getZoom() >= ICON_ZOOM);
+}
+
+/* ===================== 필터 ===================== */
+let activeType = null, activePeriod = null, onlyRoute = false;
+
+document.querySelectorAll('#typeChips .chip').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const t = btn.dataset.type;
+    activeType = (activeType === t) ? null : t;
+    document.querySelectorAll('#typeChips .chip')
+      .forEach(b => b.classList.toggle('on', b.dataset.type === activeType));
+    applyFilter();
+  });
+});
+
+const periodBtn   = document.getElementById('periodBtn');
+const periodList  = document.getElementById('periodList');
+const periodLabel = document.getElementById('periodLabel');
+
+periodBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  const open = periodList.classList.toggle('show');
+  periodBtn.classList.toggle('open', open);
+});
+document.querySelectorAll('#periodList .chip').forEach(btn => {
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    activePeriod = btn.dataset.period;
+    periodLabel.textContent = activePeriod;
+    periodBtn.classList.add('on');
+    periodList.classList.remove('show');
+    periodBtn.classList.remove('open');
+    applyFilter();
+  });
+});
+
+function applyFilter(){
+  const limit = activePeriod ? PERIOD_DAYS[activePeriod] : Infinity;
+  markers.forEach(m => {
+    const r = m.rec;
+    if(onlyRoute){                       /* 안내 중 토글 OFF — 목적지만 남김 */
+      m.el.style.display = (r === selected) ? '' : 'none';
+      return;
+    }
+    const okType   = !activeType || activeType === '전체' || r.type === activeType;
+    const okPeriod = r.days <= limit;
+    m.el.style.display = (okType && okPeriod) ? '' : 'none';
+  });
+}
+
+/* ===================== 오버레이 ===================== */
+const meLabel   = document.getElementById('meLabel');
+const pinLabel  = document.getElementById('pinLabel');
+const distLabel = document.getElementById('distLabel');
+const centerPin = document.getElementById('centerPin');
+const dashLine  = document.getElementById('dashLine');
+
+let mode = 'idle';
+let meLabelOn = false, dragging = false;
+let selected = null;
+
+function fmt(n){ return n.toFixed(6); }
+function fmtDist(km){ return km < 1 ? Math.round(km*1000) + 'm' : km.toFixed(1) + 'km'; }
+
+function distance(la1, lo1, la2, lo2){
+  const R = 6371, r = Math.PI/180;
+  const dLa = (la2-la1)*r, dLo = (lo2-lo1)*r;
+  const a = Math.sin(dLa/2)**2 + Math.cos(la1*r)*Math.cos(la2*r)*Math.sin(dLo/2)**2;
+  return 2*R*Math.asin(Math.sqrt(a));
+}
+
+function toggleMeLabel(){
+  meLabelOn = !meLabelOn;
+  meLabel.textContent = fmt(ME.lat) + ', ' + fmt(ME.lng);
+  meLabel.classList.toggle('show', meLabelOn);
+  positionOverlay();
+}
+
+function onMoveStart(){
+  dragging = true;
+  if(mode === 'idle' || mode === 'pin'){
+    mode = 'pin';
+    centerPin.classList.add('show');
+    meLabel.classList.add('show');
+    distLabel.classList.add('show');
+  }
+}
+function onMove(){ positionOverlay(); }
+function onMoveEnd(){
+  dragging = false;
+  if(mode === 'pin'){
+    distLabel.classList.remove('show');
+    if(!meLabelOn) meLabel.classList.remove('show');
+  }
+  positionOverlay();
+}
+function onRotate(){
+  const b = -map.getBearing();
+  document.querySelector('#compass svg').style.transform = 'rotate(' + b + 'deg)';
+  const arrow = meIcon.querySelector('.me-arrow');
+  if(arrow) arrow.style.transform = 'rotate(' + b + 'deg)';
+}
+
+function drawLine(a, b, on){
+  dashLine.setAttribute('x1', a.x); dashLine.setAttribute('y1', a.y);
+  dashLine.setAttribute('x2', b.x); dashLine.setAttribute('y2', b.y);
+  dashLine.setAttribute('opacity', on ? '.85' : '0');
+}
+
+function positionOverlay(){
+  if(!map) return;
+  const mePt = map.project([ME.lng, ME.lat]);
+
+  meIcon.style.left = mePt.x + 'px';
+  meIcon.style.top  = mePt.y + 'px';
+  meLabel.style.left = mePt.x + 'px';
+  meLabel.style.top  = (mePt.y - 34) + 'px';
+  meLabel.style.transform = 'translate(-50%,-100%)';
+
+  if(mode === 'selected' && selected){
+    const tPt = map.project([selected.lng, selected.lat]);
+    drawLine(mePt, tPt, true);
+
+    meLabel.textContent = fmt(ME.lat) + ', ' + fmt(ME.lng);
+    meLabel.classList.add('show');
+
+    pinLabel.textContent = fmt(selected.lat) + ', ' + fmt(selected.lng);
+    pinLabel.classList.add('show');
+    pinLabel.style.left = tPt.x + 'px';
+    pinLabel.style.top  = (tPt.y - 42) + 'px';
+    pinLabel.style.transform = 'translate(-50%,-100%)';
+
+    distLabel.textContent = fmtDist(distance(ME.lat, ME.lng, selected.lat, selected.lng));
+    distLabel.classList.add('show');
+    distLabel.style.left = ((mePt.x + tPt.x)/2) + 'px';
+    distLabel.style.top  = ((mePt.y + tPt.y)/2 - 14) + 'px';
+    distLabel.style.transform = 'translate(-50%,-50%)';
+    return;
+  }
+
+  if(mode === 'nav'){
+    drawLine(mePt, mePt, false);
+    pinLabel.classList.remove('show');
+    distLabel.classList.remove('show');
+    if(!meLabelOn) meLabel.classList.remove('show');
+    return;
+  }
+
+  if(mode === 'pin'){
+    const c   = map.getCenter();
+    const cPt = { x: phone.clientWidth/2, y: phone.clientHeight/2 };
+    pinLabel.textContent = fmt(c.lat) + ', ' + fmt(c.lng);
+    pinLabel.classList.toggle('show', dragging || meLabelOn);
+    pinLabel.style.left = cPt.x + 'px';
+    pinLabel.style.top  = (cPt.y - 40) + 'px';
+    pinLabel.style.transform = 'translate(-50%,-100%)';
+    drawLine(mePt, cPt, true);
+    if(dragging){
+      distLabel.textContent = fmtDist(distance(ME.lat, ME.lng, c.lat, c.lng));
+      distLabel.style.left = ((mePt.x + cPt.x)/2) + 'px';
+      distLabel.style.top  = ((mePt.y + cPt.y)/2 - 16) + 'px';
+      distLabel.style.transform = 'translate(-50%,-50%)';
+    }
+    return;
+  }
+
+  drawLine(mePt, mePt, false);
+  pinLabel.classList.remove('show');
+  distLabel.classList.remove('show');
+}
+
+/* ===================== 시트 ===================== */
+const sheet       = document.getElementById('sheet');
+const sheetTop    = document.getElementById('sheetTop');
+const sheetScroll = document.getElementById('sheetScroll');
+
+let sheetState = 'hidden';
+const H     = () => phone.clientHeight;
+const peekH = () => sheetTop.offsetHeight;
+const peekY = () => H() - peekH() - 94;
+
+function setSheet(s){
+  sheetState = s;
+  sheet.classList.remove('dragging');
+  if(s === 'hidden'){
+    sheet.classList.remove('full','compact');
+    sheet.style.transform = 'translateY(100%)';
+  } else if(s === 'peek'){
+    sheet.classList.remove('full','compact');
+    sheet.style.transform = 'translateY(' + peekY() + 'px)';
+    sheetScroll.scrollTop = 0;
+  } else {
+    sheet.classList.add('full');
+    sheet.style.transform = 'translateY(0px)';
+  }
+}
+
+function startDrag(e){
+  if(e.target.closest('button')) return;
+  if(sheetState === 'full' && sheetScroll.scrollTop > 0) return;
+  const y0 = e.clientY;
+  const t0 = (sheetState === 'peek') ? peekY() : 0;
+  let cur = t0, moved = false;
+  sheet.classList.add('dragging');
+
+  function move(ev){
+    const dy = ev.clientY - y0;
+    if(Math.abs(dy) > 3) moved = true;
+    cur = Math.max(0, Math.min(peekY() + 130, t0 + dy));
+    sheet.style.transform = 'translateY(' + cur + 'px)';
+  }
+  function up(){
+    document.removeEventListener('pointermove', move);
+    document.removeEventListener('pointerup', up);
+    sheet.classList.remove('dragging');
+    if(!moved){ setSheet(sheetState === 'peek' ? 'full' : 'peek'); return; }
+    if(cur > peekY() + 70){ clearSelection(); return; }
+    setSheet(cur < peekY() * 0.55 ? 'full' : 'peek');
+  }
+  document.addEventListener('pointermove', move);
+  document.addEventListener('pointerup', up);
+}
+
+sheetTop.addEventListener('pointerdown', startDrag);
+document.getElementById('fhdr').addEventListener('pointerdown', startDrag);
+document.getElementById('sheetBack').addEventListener('click', () => setSheet('peek'));
+
+sheetScroll.addEventListener('scroll', () => {
+  sheet.classList.toggle('compact', sheetState === 'full' && sheetScroll.scrollTop > 60);
+});
+
+document.querySelectorAll('[data-star]').forEach(b => {
+  b.addEventListener('click', () => {
+    const on = !b.classList.contains('on');
+    document.querySelectorAll('[data-star]').forEach(x => {
+      x.classList.toggle('on', on);
+      x.querySelector('path').setAttribute('fill', on ? 'currentColor' : 'none');
+    });
+  });
+});
+
+/* ===================== 기록 선택 ===================== */
+function agoText(days){
+  if(days < 1) return Math.max(1, Math.round(days*24)) + '시간 전';
+  if(days < 30) return Math.round(days) + '일 전';
+  if(days < 365) return Math.round(days/30) + '개월 전';
+  return Math.floor(days/365) + '년 전';
+}
+function dateText(days){
+  const d = new Date(Date.now() - days*86400000);
+  const wd = ['일','월','화','수','목','금','토'][d.getDay()];
+  const h  = d.getHours();
+  const ap = h < 12 ? '오전' : '오후';
+  const hh = String(h % 12 === 0 ? 12 : h % 12).padStart(2,'0');
+  return d.getFullYear() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' +
+         String(d.getDate()).padStart(2,'0') + '(' + wd + ') ' +
+         ap + ' ' + hh + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+
+function fillSheet(r){
+  const km = distance(ME.lat, ME.lng, r.lat, r.lng);
+  const meta = fmtDist(km) + '<span>|</span>' + agoText(r.days) + '<span>|</span>' + dateText(r.days);
+  const red = r.type === '위험';
+
+  document.getElementById('pTitle').textContent = r.title;
+  document.getElementById('hTitle').textContent = r.title;
+  document.getElementById('pDesc').textContent  = r.desc;
+  document.getElementById('pMeta').innerHTML    = meta;
+  document.getElementById('fCoord').textContent = fmt(r.lat) + ',  ' + fmt(r.lng);
+  document.getElementById('fAlt').textContent   = r.alt;
+  document.getElementById('fClimate').textContent = r.climate;
+
+  const badge = document.getElementById('pBadge');
+  badge.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none">' + ICONS[r.icon] + '</svg>';
+  badge.classList.toggle('red', red);
+  document.getElementById('hDot').classList.toggle('red', red);
+}
+
+function selectRecord(i){
+  if(mode === 'nav') return;
+  selected = RECORDS[i];
+  markers.forEach((m, j) => m.el.classList.toggle('sel', j === i));
+
+  mode = 'selected';
+  phone.className = 'phone state-sel' + (phone.classList.contains('zoomed') ? ' zoomed' : '');
+  centerPin.classList.remove('show');
+
+  fillSheet(selected);
+  setSheet('peek');
+  phone.style.setProperty('--lift', peekH() + 'px');
+
+  map.easeTo({
+    center:[selected.lng, selected.lat],
+    offset:[0, -peekH()/2 - 20],
+    duration:650
+  });
+  positionOverlay();
+}
+
+function clearSelection(){
+  selected = null;
+  markers.forEach(m => m.el.classList.remove('sel'));
+  mode = 'idle';
+  phone.className = 'phone state-idle' + (phone.classList.contains('zoomed') ? ' zoomed' : '');
+  phone.style.setProperty('--lift', '0px');
+  setSheet('hidden');
+  positionOverlay();
+}
+
+/* ===================== 팝업 ===================== */
+const scrim = document.getElementById('scrim');
+const popup = document.getElementById('popup');
+let popRightAction = null, popLeftAction = null;
+
+function openPopup(o){
+  document.getElementById('popTitle').textContent = o.title;
+  document.getElementById('popDesc').textContent  = o.desc;
+  document.getElementById('popLeft').textContent  = o.left;
+  document.getElementById('popRight').textContent = o.right;
+  popLeftAction  = o.onLeft  || null;
+  popRightAction = o.onRight || null;
+  scrim.classList.add('show');
+  popup.classList.add('show');
+}
+function closePopup(){
+  scrim.classList.remove('show');
+  popup.classList.remove('show');
+}
+document.getElementById('popClose').addEventListener('click', closePopup);
+scrim.addEventListener('click', closePopup);
+document.getElementById('popLeft').addEventListener('click', () => {
+  closePopup(); if(popLeftAction) popLeftAction();
+});
+document.getElementById('popRight').addEventListener('click', () => {
+  closePopup(); if(popRightAction) popRightAction();
+});
+
+document.querySelectorAll('[data-act]').forEach(b => {
+  b.addEventListener('click', () => {
+    if(!selected) return;
+    const arrive = b.dataset.act === 'arrive';
+    openPopup({
+      title: arrive ? '도착' : '출발',
+      desc : arrive
+        ? "내 위치에서 출발하여 '" + selected.title + "'에 도착"
+        : "'" + selected.title + "'에서 출발하여 목적지에 도착",
+      left : arrive ? '출발지 선택' : '도착지 선택',
+      right: '최적 경로 생성',
+      onRight: startNav
+    });
+  });
+});
+
+/* ===================== 내비게이션 ===================== */
+function buildRoute(a, b){
+  const pts = [], N = 16;
+  const dx = b[0]-a[0], dy = b[1]-a[1];
+  const len = Math.hypot(dx, dy) || 1;
+  for(let i=0;i<=N;i++){
+    const t = i/N;
+    const off = Math.sin(t*Math.PI) * Math.sin(t*4.2) * len * 0.07;
+    pts.push([ a[0] + dx*t + (-dy/len)*off, a[1] + dy*t + (dx/len)*off ]);
+  }
+  return pts;
+}
+
+function startNav(){
+  if(!selected) return;
+  mode = 'nav';
+  phone.className = 'phone state-nav' + (phone.classList.contains('zoomed') ? ' zoomed' : '');
+  phone.style.setProperty('--lift', '0px');
+  setSheet('hidden');
+
+  const data = { type:'Feature',
+    geometry:{ type:'LineString', coordinates:buildRoute([ME.lng,ME.lat],[selected.lng,selected.lat]) } };
+
+  if(map.getSource('route')){
+    map.getSource('route').setData(data);
+    map.setLayoutProperty('route-line','visibility','visible');
+  } else {
+    map.addSource('route', { type:'geojson', data });
+    map.addLayer({
+      id:'route-line', type:'line', source:'route',
+      layout:{ 'line-cap':'round', 'line-join':'round' },
+      paint:{ 'line-color':'#404823', 'line-width':5, 'line-opacity':.95 }
+    });
+  }
+
+  document.getElementById('navPill').textContent =
+    '목적지까지 ' + fmtDist(distance(ME.lat, ME.lng, selected.lat, selected.lng));
+
+  const b = new mapboxgl.LngLatBounds([ME.lng,ME.lat],[ME.lng,ME.lat])
+    .extend([selected.lng, selected.lat]);
+  map.fitBounds(b, { padding:{ top:150, bottom:190, left:80, right:80 }, duration:800 });
+
+  positionOverlay();
+}
+
+function endNav(){
+  if(map.getLayer('route-line')) map.setLayoutProperty('route-line','visibility','none');
+  onlyRoute = false;
+  document.getElementById('navToggle').classList.remove('off');
+  clearSelection();
+  applyFilter();
+}
+
+document.getElementById('fabStop').addEventListener('click', () => {
+  openPopup({
+    title:'탐사 종료',
+    desc :"'" + (selected ? selected.title : '') + "' 탐사를 이대로 종료할까요?",
+    left :'계속 진행',
+    right:'탐사 종료',
+    onRight: endNav
+  });
+});
+
+document.getElementById('navToggle').addEventListener('click', function(){
+  onlyRoute = this.classList.toggle('off');
+  applyFilter();
+});
+
+/* ===================== 버튼 ===================== */
+document.getElementById('fabLocate').addEventListener('click', () => {
+  map.easeTo({ center:[ME.lng, ME.lat], zoom:13.6, bearing:0, duration:700 });
+});
+document.getElementById('compass').addEventListener('click', () => {
+  map.easeTo({ bearing:0, pitch:0, duration:500 });
+});
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
+    t.classList.add('on');
+  });
+});
+
+/* ===================== 프레임 크기 ===================== */
+function fitPhone(){
+  const mobile = window.matchMedia('(max-width:700px)').matches ||
+                 window.matchMedia('(display-mode:standalone)').matches;
+  if(mobile){
+    phone.style.transform = '';
+    stage.style.width = stage.style.height = '';
+    return;
+  }
+  const byHeight = (window.innerHeight - 64) / 874;
+  const byWidth  = (window.innerWidth - 420) / 402;
+  const s = Math.max(0.35, Math.min(MAX_SCALE, byHeight, byWidth));
+  phone.style.transform = 'scale(' + s + ')';
+  stage.style.width  = (402 * s) + 'px';
+  stage.style.height = (874 * s) + 'px';
+}
+fitPhone();
+
+let resizeTimer;
+function handleResize(){
+  fitPhone();
+  if(sheetState !== 'hidden') setSheet(sheetState);
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if(!map) return;
+    map.resize();
+    positionOverlay();
+  }, 80);
+}
+window.addEventListener('resize', handleResize);
+window.addEventListener('orientationchange', handleResize);
+if(window.visualViewport) window.visualViewport.addEventListener('resize', handleResize);
+
+document.addEventListener('click', () => {
+  periodList.classList.remove('show');
+  periodBtn.classList.remove('open');
+});
+</script>
+</body>
+</html>
