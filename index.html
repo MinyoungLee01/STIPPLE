@@ -43,6 +43,7 @@
     transform-origin:top left;
     --safe-bottom:0px;
     --lift:0px;
+    --tabh:94px;
   }
 
   /* ---------- 조작 안내 (데스크톱 전용) ---------- */
@@ -79,10 +80,16 @@
       width:100vw;height:100dvh;
       border-radius:0;box-shadow:none;transform:none !important;
       --safe-bottom:env(safe-area-inset-bottom, 0px);
+      --tabh:72px;                       /* 실제 기기에서는 탭바를 낮게 */
     }
-    .statusbar{display:none;}
+    .statusbar{display:none;}            /* 기기의 진짜 상태바를 사용 */
+    .home-indicator{display:none;}       /* 기기의 진짜 홈 인디케이터를 사용 */
     .topbar,.navbar{top:calc(env(safe-area-inset-top, 12px) + 12px);}
   }
+  /* 화면 크기와 상관없이 터치 기기면 가짜 상태바·홈바를 숨김 */
+  body.is-mobile .statusbar,
+  body.is-mobile .home-indicator{display:none;}
+  body.is-mobile .phone{--tabh:72px;}
 
   /* ---------- 지도 ---------- */
   #map{position:absolute;inset:0;}
@@ -215,6 +222,14 @@
   }
   #centerPin.show{opacity:1;}
 
+  /* 기록이 아닌 임의 지점을 목적지로 안내할 때의 핀 */
+  #destPin{
+    position:absolute;z-index:20;pointer-events:none;
+    transform:translate(-50%,-100%);
+    opacity:0;transition:opacity .2s ease;
+  }
+  #destPin.show{opacity:1;}
+
   /* 좌표 / 거리 라벨 */
   .label{
     position:absolute;z-index:22;pointer-events:none;
@@ -240,7 +255,7 @@
   /* ---------- 우측 버튼 ---------- */
   .side{
     position:absolute;right:var(--margin);
-    bottom:calc(108px + var(--safe-bottom) + var(--lift));z-index:30;
+    bottom:calc(var(--tabh) + 14px + var(--safe-bottom) + var(--lift));z-index:30;
     display:flex;flex-direction:column;gap:16px;
     transition:bottom .32s cubic-bezier(.32,.72,.3,1);
   }
@@ -258,7 +273,7 @@
   /* ---------- 좌측 하단 ---------- */
   .compass{
     position:absolute;left:var(--margin);
-    bottom:calc(157px + var(--safe-bottom) + var(--lift));z-index:30;
+    bottom:calc(var(--tabh) + 63px + var(--safe-bottom) + var(--lift));z-index:30;
     width:52px;height:52px;border-radius:50%;background:var(--white);
     display:flex;align-items:center;justify-content:center;
     box-shadow:var(--shadow);cursor:pointer;
@@ -267,7 +282,7 @@
   .compass svg{transition:transform .3s ease;}
   .temp{
     position:absolute;left:var(--margin);
-    bottom:calc(109px + var(--safe-bottom) + var(--lift));z-index:30;
+    bottom:calc(var(--tabh) + 15px + var(--safe-bottom) + var(--lift));z-index:30;
     height:30px;padding:0 12px;border-radius:15px;background:var(--white);
     display:inline-flex;align-items:center;gap:6px;
     font-size:13px;font-weight:500;color:var(--black);box-shadow:var(--shadow);
@@ -277,7 +292,7 @@
   /* ---------- 하단 탭 ---------- */
   .tabbar{
     position:absolute;left:0;right:0;bottom:0;z-index:35;
-    height:calc(94px + var(--safe-bottom));
+    height:calc(var(--tabh) + var(--safe-bottom));
     background:var(--white);display:flex;align-items:flex-start;
     padding-top:14px;border-top:1px solid rgba(20,20,20,.07);
   }
@@ -346,7 +361,7 @@
 
   .sheet-cards{
     background:var(--beige);
-    padding:14px var(--margin) calc(120px + var(--safe-bottom));
+    padding:14px var(--margin) calc(130px + var(--safe-bottom));
   }
   .card{background:var(--white);border-radius:16px;padding:18px 16px;margin-bottom:14px;}
   .card-head{display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
@@ -469,6 +484,14 @@
   </svg>
 
   <div id="centerPin">
+    <svg width="26" height="34" viewBox="0 0 26 34" fill="none">
+      <path fill-rule="evenodd" clip-rule="evenodd"
+            d="M13 0C5.82 0 0 5.82 0 13c0 9.1 11.3 19.7 11.78 20.15a1.8 1.8 0 0 0 2.44 0C14.7 32.7 26 22.1 26 13 26 5.82 20.18 0 13 0Zm0 17.2a4.6 4.6 0 1 0 0-9.2 4.6 4.6 0 0 0 0 9.2Z"
+            fill="#C31313"/>
+    </svg>
+  </div>
+
+  <div id="destPin">
     <svg width="26" height="34" viewBox="0 0 26 34" fill="none">
       <path fill-rule="evenodd" clip-rule="evenodd"
             d="M13 0C5.82 0 0 5.82 0 13c0 9.1 11.3 19.7 11.78 20.15a1.8 1.8 0 0 0 2.44 0C14.7 32.7 26 22.1 26 13 26 5.82 20.18 0 13 0Zm0 17.2a4.6 4.6 0 1 0 0-9.2 4.6 4.6 0 0 0 0 9.2Z"
@@ -889,6 +912,7 @@ const meLabel   = document.getElementById('meLabel');
 const pinLabel  = document.getElementById('pinLabel');
 const distLabel = document.getElementById('distLabel');
 const centerPin = document.getElementById('centerPin');
+const destPin   = document.getElementById('destPin');
 const dashLine  = document.getElementById('dashLine');
 
 let mode = 'idle';
@@ -979,8 +1003,15 @@ function positionOverlay(){
     pinLabel.classList.remove('show');
     distLabel.classList.remove('show');
     if(!meLabelOn) meLabel.classList.remove('show');
+    if(selected && selected.custom){
+      const dPt = map.project([selected.lng, selected.lat]);
+      destPin.style.left = dPt.x + 'px';
+      destPin.style.top  = dPt.y + 'px';
+      destPin.classList.add('show');
+    }
     return;
   }
+  destPin.classList.remove('show');
 
   if(mode === 'pin'){
     const c   = map.getCenter();
@@ -1013,7 +1044,8 @@ const sheetScroll = document.getElementById('sheetScroll');
 let sheetState = 'hidden';
 const H     = () => phone.clientHeight;
 const peekH = () => sheetTop.offsetHeight;
-const peekY = () => H() - peekH() - 94;
+const tabH  = () => document.querySelector('.tabbar').offsetHeight;
+const peekY = () => H() - peekH() - tabH();
 
 function setSheet(s){
   sheetState = s;
@@ -1171,6 +1203,22 @@ document.getElementById('popRight').addEventListener('click', () => {
   closePopup(); if(popRightAction) popRightAction();
 });
 
+/* 오른쪽 아래 화살표 버튼 — 화면 중앙 지점으로 경로 생성 */
+document.getElementById('fabRoute').addEventListener('click', () => {
+  openPopup({
+    title:'경로 생성',
+    desc :'내 위치에서 출발하여 현재 위치에 도착',
+    left :'출발지 선택',
+    right:'최적 경로 생성',
+    onRight: () => {
+      const c = map.getCenter();
+      selected = { lng:c.lng, lat:c.lat, title:'현재 위치', custom:true };
+      markers.forEach(m => m.el.classList.remove('sel'));
+      startNav();
+    }
+  });
+});
+
 document.querySelectorAll('[data-act]').forEach(b => {
   b.addEventListener('click', () => {
     if(!selected) return;
@@ -1206,6 +1254,7 @@ function startNav(){
   phone.className = 'phone state-nav' + (phone.classList.contains('zoomed') ? ' zoomed' : '');
   phone.style.setProperty('--lift', '0px');
   setSheet('hidden');
+  centerPin.classList.remove('show');   /* 화면 중앙 빨간 핀 제거 */
 
   const data = { type:'Feature',
     geometry:{ type:'LineString', coordinates:buildRoute([ME.lng,ME.lat],[selected.lng,selected.lat]) } };
@@ -1272,7 +1321,10 @@ document.querySelectorAll('.tab').forEach(t => {
 /* ===================== 프레임 크기 ===================== */
 function fitPhone(){
   const mobile = window.matchMedia('(max-width:700px)').matches ||
-                 window.matchMedia('(display-mode:standalone)').matches;
+                 window.matchMedia('(display-mode:standalone)').matches ||
+                 (window.matchMedia('(pointer:coarse)').matches &&
+                  Math.min(screen.width, screen.height) <= 820);
+  document.body.classList.toggle('is-mobile', mobile);
   if(mobile){
     phone.style.transform = '';
     stage.style.width = stage.style.height = '';
