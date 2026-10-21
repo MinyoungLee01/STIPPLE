@@ -43,7 +43,7 @@
     transform-origin:top left;
     --safe-bottom:0px;
     --lift:0px;
-    --tabh:94px;
+    --tabh:20px;          /* 하단 탭바를 숨긴 상태의 여백 */
   }
 
   /* ---------- 조작 안내 (데스크톱 전용) ---------- */
@@ -80,16 +80,24 @@
       width:100vw;height:100dvh;
       border-radius:0;box-shadow:none;transform:none !important;
       --safe-bottom:env(safe-area-inset-bottom, 0px);
-      --tabh:72px;                       /* 실제 기기에서는 탭바를 낮게 */
+      --tabh:20px;
     }
     .statusbar{display:none;}            /* 기기의 진짜 상태바를 사용 */
     .home-indicator{display:none;}       /* 기기의 진짜 홈 인디케이터를 사용 */
-    .topbar,.navbar{top:calc(env(safe-area-inset-top, 12px) + 12px);}
+    .topbar,.navbar{top:12px;}         /* 가짜 상태바가 없으니 위로 붙임 */
   }
+  /* 홈 화면에 추가해 실행할 때만 노치 아래로 내림 */
+  @media (display-mode:standalone){
+    .topbar,.navbar{top:calc(env(safe-area-inset-top, 0px) + 10px);}
+  }
+  body.is-mobile .topbar,
+  body.is-mobile .navbar{top:12px;}
   /* 화면 크기와 상관없이 터치 기기면 가짜 상태바·홈바를 숨김 */
   body.is-mobile .statusbar,
   body.is-mobile .home-indicator{display:none;}
-  body.is-mobile .phone{--tabh:72px;}
+
+  /* 다른 페이지가 아직 없어서 하단 탭바는 숨김 — 되살리려면 이 줄을 지우세요 */
+  .tabbar{display:none;}
 
   /* ---------- 지도 ---------- */
   #map{position:absolute;inset:0;}
@@ -772,7 +780,31 @@ const RAW = [
   [126.8391,37.3021,'위험','ban',    19], [126.8378,37.3012,'위험','alert',35],
   [126.8243,37.2956,'위험','alert', 150], [126.8307,37.2952,'위험','ban',   27],
   [126.8266,37.2908,'위험','ban',     4], [126.8402,37.2902,'위험','alert',88],
-  [126.8419,37.2918,'위험','ban',   210], [126.8225,37.3002,'위험','alert',14]
+  [126.8419,37.2918,'위험','ban',   210], [126.8225,37.3002,'위험','alert',14],
+
+  /* 넓은 범위로 흩어진 기록 10개 */
+  [126.7962,37.3187,'도움','drop',   7], [126.8731,37.3246,'위험','alert',52],
+  [126.8094,37.2718,'저장','home',  38], [126.8803,37.2841,'도움','bolt', 165],
+  [126.7889,37.2863,'위험','ban',   21], [126.8612,37.3319,'도움','plus',  3],
+  [126.8167,37.3298,'저장','gear', 240], [126.8458,37.2693,'위험','alert',66],
+  [126.8886,37.3071,'도움','home',  13], [126.7934,37.3024,'저장','pill', 102],
+
+  /* 더 넓은 지역에 골고루 흩어진 기록 30개 */
+  [126.8505,37.3210,'위험','ban',   13], [126.8749,37.2926,'위험','alert',140],
+  [126.7685,37.2940,'저장','home', 330], [126.7760,37.2773,'도움','gear',  24],
+  [126.8396,37.3314,'도움','drop',  70], [126.8744,37.2718,'저장','bolt', 330],
+  [126.7977,37.3007,'도움','gear',  70], [126.7720,37.2507,'도움','drop',   9],
+  [126.7983,37.3396,'위험','alert',140], [126.7968,37.2756,'도움','gear',   4],
+  [126.9026,37.3364,'도움','home', 140], [126.8914,37.2506,'도움','gear',  48],
+  [126.7736,37.3334,'저장','home',   4], [126.7967,37.2495,'도움','drop',   6],
+  [126.9016,37.2931,'위험','alert', 18], [126.8219,37.2497,'도움','gear', 190],
+  [126.8485,37.2744,'저장','home',  18], [126.7769,37.3149,'도움','bolt',  13],
+  [126.8727,37.3301,'도움','gear',   9], [126.8203,37.2931,'위험','alert',  6],
+  [126.9006,37.3111,'저장','pill',  13], [126.8639,37.3107,'도움','drop', 330],
+  [126.8395,37.2558,'도움','gear',   4], [126.8528,37.3005,'위험','ban',    4],
+  [126.8212,37.3348,'위험','ban',   24], [126.8031,37.3137,'위험','ban',   18],
+  [126.9014,37.2778,'저장','bolt',   6], [126.8250,37.2750,'위험','alert',250],
+  [126.8221,37.3156,'도움','plus',  36], [126.8723,37.2537,'도움','drop',  13]
 ];
 
 const RECORDS = RAW.map(([lng,lat,type,icon,days], i) => {
@@ -1044,7 +1076,7 @@ const sheetScroll = document.getElementById('sheetScroll');
 let sheetState = 'hidden';
 const H     = () => phone.clientHeight;
 const peekH = () => sheetTop.offsetHeight;
-const tabH  = () => document.querySelector('.tabbar').offsetHeight;
+const tabH  = () => document.querySelector('.tabbar').offsetHeight + 20;
 const peekY = () => H() - peekH() - tabH();
 
 function setSheet(s){
