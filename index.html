@@ -417,12 +417,14 @@
   /* ---------- 모바일: 화면 전체 ----------
      뒤쪽 규칙이 이기므로 스타일시트 맨 끝에 둬야 확실히 적용됨 */
   @media (max-width:700px), (display-mode:standalone){
-    html,body{height:100dvh;overflow:hidden;}
+    html,body{height:100%;overflow:hidden;}
     body{padding:0;gap:0;background:var(--beige);display:block;}
     .guide{display:none;}
-    .stage{width:100vw !important;height:100dvh !important;}
+    .stage{width:auto !important;height:auto !important;}
+    /* vh·dvh 는 기기마다 상태바를 포함하기도 빼기도 해서 위아래에 틈이 생김.
+       position:fixed + inset:0 은 언제나 '지금 보이는 화면'에 정확히 들어맞음 */
     .phone{
-      width:100vw;height:100dvh;
+      position:fixed;inset:0;width:auto;height:auto;
       border-radius:0;box-shadow:none;transform:none !important;
       --safe-bottom:env(safe-area-inset-bottom, 0px);
       --tabh:72px;
@@ -430,8 +432,14 @@
     .topbar,.navbar{top:calc(env(safe-area-inset-top, 0px) + 12px);}
   }
   /* 터치 기기면 화면 폭과 무관하게 같은 규칙 적용 */
-  body.is-mobile{display:block;padding:0;gap:0;height:100dvh;overflow:hidden;}
-  body.is-mobile .phone{--tabh:72px;}
+  body.is-mobile{display:block;padding:0;gap:0;height:100%;overflow:hidden;}
+  body.is-mobile .stage{width:auto !important;height:auto !important;}
+  body.is-mobile .phone{
+    position:fixed;inset:0;width:auto;height:auto;
+    border-radius:0;box-shadow:none;transform:none !important;
+    --safe-bottom:env(safe-area-inset-bottom, 0px);
+    --tabh:72px;
+  }
   body.is-mobile .topbar,
   body.is-mobile .navbar{top:calc(env(safe-area-inset-top, 0px) + 12px);}
 </style>
