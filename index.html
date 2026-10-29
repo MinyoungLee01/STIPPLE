@@ -9,6 +9,8 @@
 <meta name="apple-mobile-web-app-title" content="STIPPLE">
 <meta name="theme-color" content="#F8F4EE">
 <title>STIPPLE</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wan2land/d2coding@1.3.2/d2coding-ligature-subset.css">
 <link href="https://api.mapbox.com/mapbox-gl-js/v3.26.0/mapbox-gl.css" rel="stylesheet">
@@ -43,7 +45,7 @@
     transform-origin:top left;
     --safe-bottom:0px;
     --lift:0px;
-    --tabh:20px;          /* 하단 탭바를 숨긴 상태의 여백 */
+    --tabh:94px;
   }
 
   /* ---------- 조작 안내 (데스크톱 전용) ---------- */
@@ -80,7 +82,7 @@
       width:100vw;height:100dvh;
       border-radius:0;box-shadow:none;transform:none !important;
       --safe-bottom:env(safe-area-inset-bottom, 0px);
-      --tabh:20px;
+      --tabh:72px;                       /* 실제 기기에서는 탭바를 낮게 */
     }
     .statusbar{display:none;}            /* 기기의 진짜 상태바를 사용 */
     .home-indicator{display:none;}       /* 기기의 진짜 홈 인디케이터를 사용 */
@@ -95,9 +97,8 @@
   /* 화면 크기와 상관없이 터치 기기면 가짜 상태바·홈바를 숨김 */
   body.is-mobile .statusbar,
   body.is-mobile .home-indicator{display:none;}
+  body.is-mobile .phone{--tabh:72px;}
 
-  /* 다른 페이지가 아직 없어서 하단 탭바는 숨김 — 되살리려면 이 줄을 지우세요 */
-  .tabbar{display:none;}
 
   /* ---------- 지도 ---------- */
   #map{position:absolute;inset:0;}
@@ -105,7 +106,8 @@
   #mapFallback{
     position:absolute;inset:0;background:var(--deep-beige);
     display:none;align-items:center;justify-content:center;text-align:center;
-    color:var(--deep-green);font-size:13px;line-height:1.7;padding:40px;
+    color:var(--deep-green);font-size:15px;font-weight:500;letter-spacing:-.3px;
+    line-height:1.7;padding:40px;z-index:50;
   }
 
   /* ---------- 상태바 ---------- */
@@ -149,12 +151,13 @@
   .navbar{
     position:absolute;top:58px;left:0;right:0;z-index:30;
     padding:0 var(--margin);display:none;
-    align-items:center;justify-content:space-between;
+    align-items:center;justify-content:flex-end;
   }
   .state-nav .navbar{display:flex;}
   .state-nav .topbar{display:none;}
   .nav-pill{
-    margin:0 auto 0 56px;height:34px;padding:0 16px;border-radius:17px;
+    position:absolute;left:50%;transform:translateX(-50%);
+    height:34px;padding:0 16px;border-radius:17px;
     background:var(--white);box-shadow:var(--shadow);
     display:inline-flex;align-items:center;
     font-size:14px;font-weight:600;letter-spacing:-.3px;color:var(--black);
@@ -180,8 +183,8 @@
     width:20px;height:20px;border-radius:50%;
     transition:width .22s ease,height .22s ease;
   }
-  .zoomed .rec .hit{width:44px;height:44px;}
-  .rec.sel .hit{width:54px;height:54px;}
+  .zoomed .rec .hit{width:36px;height:36px;}
+  .rec.sel .hit{width:40px;height:40px;}
   .rec .dot{
     width:9px;height:9px;border-radius:50%;background:var(--deep-green);
     transition:all .22s cubic-bezier(.3,.9,.4,1);
@@ -189,23 +192,30 @@
   .rec.red .dot{background:var(--deep-red);}
   .rec .ico{
     position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.3);
-    width:32px;height:32px;border-radius:50%;background:var(--deep-green);
+    width:24px;height:24px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;
     opacity:0;pointer-events:none;
-    transition:all .22s cubic-bezier(.3,.9,.4,1);
-    box-shadow:0 2px 8px rgba(20,20,20,.2);
+    filter:drop-shadow(0 2px 6px rgba(20,20,20,.28));
+    transition:opacity .2s ease,
+               transform .22s cubic-bezier(.3,.9,.4,1),
+               width .22s cubic-bezier(.3,.9,.4,1),
+               height .22s cubic-bezier(.3,.9,.4,1);
   }
-  .rec.red .ico{background:var(--deep-red);}
+  /* 흰 테두리 — 아이콘 위에 덧씌우는 링. 크기를 바꾸지 않아 전환이 매끄러움 */
+  .rec .ico::after{
+    content:'';position:absolute;inset:0;border-radius:50%;pointer-events:none;
+    box-shadow:inset 0 0 0 0 var(--white);
+    transition:box-shadow .2s ease;
+  }
+  .rec .ico svg{width:100%;height:100%;display:block;}
   .zoomed .rec .dot{opacity:0;transform:scale(.3);}
   .zoomed .rec .ico{opacity:1;transform:translate(-50%,-50%) scale(1);}
   .rec.sel .dot{opacity:0;transform:scale(.3);}
   .rec.sel .ico{
-    opacity:1;width:44px;height:44px;
+    opacity:1;width:36px;height:36px;      /* 전체 36px, 테두리는 안쪽 4px */
     transform:translate(-50%,-50%) scale(1);
-    border:3px solid var(--white);
-    box-shadow:0 3px 14px rgba(20,20,20,.3);
   }
-  .rec.sel .ico svg{width:24px;height:24px;}
+  .rec.sel .ico::after{box-shadow:inset 0 0 0 4px var(--white);}
 
   /* 내 위치 */
   .me{
@@ -214,13 +224,7 @@
     transition:opacity .2s ease;
   }
   .me.ready{opacity:1;}
-  .me-circle{
-    width:40px;height:40px;border-radius:50%;background:var(--white);
-    border:2.5px solid var(--deep-green);
-    display:flex;align-items:center;justify-content:center;
-    box-shadow:0 2px 10px rgba(20,20,20,.25);
-  }
-  .me-arrow{transform-origin:center;transition:transform .3s ease;}
+  .me svg{display:block;filter:drop-shadow(0 2px 8px rgba(20,20,20,.3));}
 
   /* 중앙 핀 */
   #centerPin{
@@ -287,7 +291,9 @@
     box-shadow:var(--shadow);cursor:pointer;
     transition:bottom .32s cubic-bezier(.32,.72,.3,1);
   }
-  .compass svg{transition:transform .3s ease;}
+  .compass svg{width:100%;height:100%;display:block;transition:transform .3s ease;}
+  /* 방향 따라가기가 켜진 동안 — 테두리로 표시 */
+  .compass.following svg{transition:transform .12s linear;}
   .temp{
     position:absolute;left:var(--margin);
     bottom:calc(var(--tabh) + 15px + var(--safe-bottom) + var(--lift));z-index:30;
@@ -350,10 +356,10 @@
 
   .rec-head{display:flex;align-items:center;gap:8px;margin-top:20px;}
   .rec-badge{
-    flex:none;width:24px;height:24px;border-radius:50%;background:var(--deep-green);
+    flex:none;width:24px;height:24px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;
   }
-  .rec-badge.red{background:var(--deep-red);}
+  .rec-badge svg{display:block;}
   .rec-head h3{font-size:19px;font-weight:700;letter-spacing:-.5px;color:var(--black);}
   .star{
     margin-left:auto;background:none;border:none;cursor:pointer;
@@ -481,8 +487,8 @@
 <div class="phone state-idle" id="phone">
   <div id="map"></div>
   <div id="mapFallback">
-    지도를 불러오지 못했어요.<br>
-    이 파일을 내 컴퓨터 브라우저에서 열면<br>정상적으로 표시돼요.
+    지도를 불러오지 못했습니다.<br>
+    인터넷 연결을 확인해주세요.
   </div>
 
   <svg id="lineLayer" xmlns="http://www.w3.org/2000/svg">
@@ -508,11 +514,14 @@
   </div>
 
   <div class="me" id="meIcon">
-    <div class="me-circle">
-      <svg class="me-arrow" width="20" height="20" viewBox="0 0 24 24">
-        <path d="M12 3.5 18.5 20 12 16.2 5.5 20 12 3.5Z" fill="#404823"/>
-      </svg>
-    </div>
+    <svg width="38" height="38" viewBox="-1 -1 38 38">
+      <path d="M34 18C34 26.8366 26.8366 34 18 34C9.16344 34 2 26.8366 2 18C2 9.16344 9.16344 2 18 2C26.8366 2 34 9.16344 34 18Z"
+            fill="#FEFEFE" stroke="#404823" stroke-width="4"/>
+      <g id="meArrow">
+        <path d="M16.1493 10.524L10.9887 23.1385C10.2928 24.8396 12.0671 26.4998 13.7182 25.6926L17.122 24.0285C17.6763 23.7576 18.3246 23.7576 18.8788 24.0285L22.2824 25.6925C23.9335 26.4998 25.7078 24.8396 25.0119 23.1385L19.8515 10.524C19.1736 8.86701 16.8272 8.867 16.1493 10.524Z"
+              fill="#404823"/>
+      </g>
+    </svg>
   </div>
 
   <div class="label tail num" id="meLabel"></div>
@@ -582,10 +591,16 @@
 
   <!-- 나침반 / 온도 -->
   <div class="compass" id="compass">
-    <svg width="30" height="34" viewBox="0 0 30 34" fill="none">
-      <path d="M15 3 20 17H10L15 3Z" fill="#C31313"/>
-      <path d="M15 17 20 17 15 24 10 17Z" fill="#E8DDCF"/>
-      <text x="15" y="32" text-anchor="middle" font-family="Pretendard" font-size="11" font-weight="600" fill="#141414">N</text>
+    <svg viewBox="4 4 56 56">
+      <circle cx="32" cy="32" r="28" fill="#FEFEFE"/>
+      <path d="M31.1284 15.5495C31.5107 14.8698 32.4893 14.8698 32.8716 15.5495L40.1617 28.5097C40.5367 29.1763 40.055 30 39.2902 30H24.7099C23.945 30 23.4633 29.1763 23.8383 28.5097L31.1284 15.5495Z" fill="#C31313"/>
+      <path d="M27 46V35L37 46V35" fill="none" stroke="#141414" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <g fill="none" stroke="#141414" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M57 32L53 32"/>
+        <path d="M32 57V53"/>
+        <path d="M6.99987 32.001L10.9999 32.001"/>
+        <path d="M31.9996 7V11"/>
+      </g>
     </svg>
   </div>
   <div class="temp">
@@ -712,10 +727,11 @@ const PLACES = {
   centla   : { lng: -92.5400, lat: 18.4200 },  // 센틀라 습지(타바스코) — 심하게 굽이치는 강, 걸프 해안
   marismas : { lng:-105.6400, lat: 22.1800 },  // 마리스마스 나시오날레스(나야리트) — 맹그로브 수로망
   chiapas  : { lng: -90.9300, lat: 16.6800 },  // 라칸돈(치아파스) — 큰 강과 밀림
+  hongik   : { lng: 127.001524, lat: 37.576507 }, // 홍익대 대학로 아트센터 — 전시장
   copper   : { lng:-107.9000, lat: 27.2600 },  // 코퍼캐니언(치와와) — 협곡과 산
   ansan    : { lng: 126.835425, lat: 37.297441 } // 기존 안산
 };
-const ME = PLACES.sanblas;
+const ME = PLACES.hongik;
 
 /* 기록 데이터가 만들어진 기준점 — 건드리지 마세요 */
 const ORIGIN = { lng: 126.835425, lat: 37.297441 };
@@ -726,16 +742,45 @@ const ICON_ZOOM = 14.6;
 const MAX_SCALE = 0.72;
 
 /* ===================== 아이콘 ===================== */
+/* 기록 아이콘 — 원 배경까지 포함된 완성 형태 (Figma SVG 그대로) */
 const ICONS = {
-  bolt:   '<path d="M13 2 4 13h6l-1 9 9-11h-6l1-9Z" fill="#FEFEFE"/>',
-  drop:   '<path d="M12 2.6c3.4 4 6 7.1 6 10.2a6 6 0 0 1-12 0c0-3.1 2.6-6.2 6-10.2Z" fill="#FEFEFE"/>',
-  home:   '<path d="M3.8 10.6 12 4l8.2 6.6V20H3.8v-9.4Z" fill="#FEFEFE"/>',
-  plus:   '<path d="M12 5v14M5 12h14" stroke="#FEFEFE" stroke-width="2.4" stroke-linecap="round"/>',
-  alert:  '<path d="M12 6v7.4" stroke="#F8F4EE" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.5" fill="#F8F4EE"/>',
-  ban:    '<circle cx="12" cy="12" r="7" stroke="#F8F4EE" stroke-width="2.2" fill="none"/><path d="m7 17 10-10" stroke="#F8F4EE" stroke-width="2.2" stroke-linecap="round"/>',
-  gear:   '<circle cx="12" cy="12" r="3.2" fill="#FEFEFE"/><path d="M12 3.6v2.6M12 17.8v2.6M20.4 12h-2.6M6.2 12H3.6M18 6l-1.9 1.9M7.9 16.1 6 18M18 18l-1.9-1.9M7.9 7.9 6 6" stroke="#FEFEFE" stroke-width="1.9" stroke-linecap="round"/>',
-  pill:   '<rect x="4.6" y="9" width="14.8" height="6.4" rx="3.2" fill="#FEFEFE" transform="rotate(-40 12 12)"/>'
+  home:  '<circle cx="12" cy="12" r="12" fill="#404823"/>'
+       + '<path d="M9 16V11.0439L12 9L15 11.0439V16" stroke="#FEFEFE" stroke-width="3" fill="none"/>',
+  drop:  '<circle cx="12" cy="12" r="12" fill="#404823"/>'
+       + '<path d="M16 13.1905C16 15.2944 14.2091 17 12 17C9.79086 17 8 15.2944 8 13.1905C8 11.0865 12 7 12 7C12 7 16 11.0865 16 13.1905Z" fill="#FEFEFE"/>',
+  gear:  '<circle cx="12" cy="12" r="12" fill="#404823"/>'
+       + '<path d="M12 6C12.3982 6 12.7893 6.03916 13.1689 6.11426L12.9736 7.09473C13.6304 7.22436 14.2413 7.48225 14.7783 7.8418L15.335 7.01172C15.9884 7.44919 16.5508 8.01159 16.9883 8.66504L16.1562 9.21973C16.5164 9.75701 16.7744 10.3681 16.9043 11.0254L17.8857 10.8311C17.9608 11.2107 18 11.6018 18 12C18 12.3982 17.9608 12.7893 17.8857 13.1689L16.9043 12.9736C16.7746 13.6305 16.5169 14.2412 16.1572 14.7783L16.9883 15.335C16.5508 15.9884 15.9884 16.5508 15.335 16.9883L14.7783 16.1572C14.2412 16.5169 13.6305 16.7746 12.9736 16.9043L13.1689 17.8857C12.7893 17.9608 12.3982 18 12 18C11.6018 18 11.2107 17.9608 10.8311 17.8857L11.0254 16.9043C10.3686 16.7745 9.75772 16.517 9.2207 16.1572L8.66504 16.9883C8.01159 16.5508 7.44919 15.9884 7.01172 15.335L7.8418 14.7783C7.48225 14.2413 7.22436 13.6304 7.09473 12.9736L6.11426 13.1689C6.03916 12.7893 6 12.3982 6 12C6 11.6018 6.03916 11.2107 6.11426 10.8311L7.09473 11.0254C7.22456 10.3682 7.48277 9.75696 7.84277 9.21973L7.01172 8.66504C7.44919 8.01159 8.01159 7.44919 8.66504 7.01172L9.21973 7.84277C9.75696 7.48277 10.3682 7.22456 11.0254 7.09473L10.8311 6.11426C11.2107 6.03916 11.6018 6 12 6ZM12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9Z" fill="#FEFEFE"/>',
+  bolt:  '<circle cx="12" cy="12" r="12" fill="#404823"/>'
+       + '<path d="M8 13L13.0007 5.99902L12.0006 13H8Z" fill="#FEFEFE"/>'
+       + '<path d="M16 11L10.9993 18.001L11.9994 11H16Z" fill="#FEFEFE"/>',
+  plus:  '<circle cx="12" cy="12" r="12" fill="#404823"/>'
+       + '<path d="M11.9971 7V17" stroke="#FEFEFE" stroke-width="3" fill="none"/>'
+       + '<path d="M17 11.9971L7 11.9971" stroke="#FEFEFE" stroke-width="3" fill="none"/>',
+  food:  '<circle cx="12" cy="12" r="12" fill="#404823"/>'
+       + '<path d="M8 7.99902C9.48003 6.51899 11.9952 6.6339 14.0303 8.66895C15.3793 10.0182 15.3795 12.3756 15.2275 13.8115L16.4131 14.9971C16.785 14.6634 17.3572 14.6757 17.7148 15.0332C18.0849 15.4032 18.0849 16.003 17.7148 16.373C17.368 16.7197 16.8193 16.7418 16.4473 16.4385L16.375 16.373L16.4404 16.4453C16.7438 16.8174 16.7218 17.3661 16.375 17.7129C16.005 18.0827 15.4051 18.0828 15.0352 17.7129C14.678 17.3556 14.6663 16.7841 14.999 16.4121L13.8125 15.2256C12.3765 15.3775 10.0199 15.3772 8.6709 14.0283C6.636 11.9934 6.52031 9.4791 8 7.99902Z" fill="#FEFEFE"/>',
+  alert: '<circle cx="12" cy="12" r="12" fill="#404823"/>'
+       + '<path d="M13 7L13 14L11 14L11 7L13 7Z" fill="#FEFEFE"/>'
+       + '<path d="M13 15L13 17L11 17L11 15L13 15Z" fill="#FEFEFE"/>',
+
+  /* 위험 기록 — 붉은 배경 */
+  alertRed: '<circle cx="12" cy="12" r="12" fill="#C31313"/>'
+       + '<path d="M13 7L13 14L11 14L11 7L13 7Z" fill="#FEFEFE"/>'
+       + '<path d="M13 15L13 17L11 17L11 15L13 15Z" fill="#FEFEFE"/>',
+  ban:   '<circle cx="12" cy="12" r="12" fill="#C31313"/>'
+       + '<path d="M17 12C17 14.7614 14.7614 17 12 17C9.23858 17 7 14.7614 7 12C7 9.23858 9.23858 7 12 7C14.7614 7 17 9.23858 17 12Z" stroke="#FEFEFE" stroke-width="2" fill="none"/>'
+       + '<path d="M9 15L15 9" stroke="#FEFEFE" stroke-width="2" fill="none"/>',
+  toxic: '<circle cx="12" cy="12" r="12" fill="#C31313"/>'
+       + '<path d="M16 13.1905C16 15.2944 14.2091 17 12 17C9.79086 17 8 15.2944 8 13.1905C8 11.0865 12 7 12 7C12 7 16 11.0865 16 13.1905Z" fill="#FEFEFE"/>'
 };
+
+/* 유형에 맞는 아이콘 키 — 위험 기록은 붉은 버전 */
+function iconKey(r){
+  return (r.type === '위험' && r.icon === 'alert') ? 'alertRed' : r.icon;
+}
+function iconSVG(r, px){
+  return '<svg width="' + px + '" height="' + px + '" viewBox="0 0 24 24">' +
+         ICONS[iconKey(r)] + '</svg>';
+}
 
 /* ===================== 기록 데이터 ===================== */
 const TEXT = {
@@ -754,15 +799,18 @@ const TEXT = {
   gear:  [['수리 도구 모음','공구 몇 가지 남겨뒀어요.'],
           ['부품 창고','쓸 만한 나사와 전선이 있습니다.'],
           ['정비 가능','작업대가 있어요. 밤에는 어두우니 주의하세요.']],
-  pill:  [['약국 잔여 물품','선반 안쪽에 남은 게 조금 있어요.'],
-          ['진통제 있음','수량이 많지 않으니 꼭 필요할 때만요.'],
-          ['해열제 발견','아이용도 섞여 있습니다.']],
+  food:  [['남은 식량','통조림 몇 개가 있어요. 유통기한 확인하고 가져가세요.'],
+          ['비상 식량 보관','마른 음식 위주로 조금 남겨뒀습니다.'],
+          ['먹을 것 있음','많지는 않아요. 꼭 필요한 분만 가져가세요.']],
   ban:   [['통행 불가','길이 완전히 무너졌어요. 다른 길로 돌아가세요.'],
           ['다리 붕괴','가운데가 내려앉았습니다. 건널 수 없어요.'],
           ['길 막힘','잔해가 쌓여있어요. 차량은 못 지나갑니다.']],
   alert: [['지반 침하 주의','걸을 때 땅이 꺼지는 느낌이 납니다.'],
-          ['오염 구역','물 색이 이상해요. 접촉하지 마세요.'],
-          ['야생동물 출몰','무리 지어 다닙니다. 해 진 뒤엔 피하세요.']]
+          ['구조물 붕괴 위험','벽이 기울어 있어요. 가까이 가지 마세요.'],
+          ['야생동물 출몰','무리 지어 다닙니다. 해 진 뒤엔 피하세요.']],
+  toxic: [['오염된 물','물 색이 이상해요. 마시지도 닿지도 마세요.'],
+          ['수질 오염 구역','냄새가 심합니다. 근처 식수도 피하세요.'],
+          ['폐수 유출','하천을 따라 퍼지고 있어요.']]
 };
 
 const RAW = [
@@ -772,14 +820,14 @@ const RAW = [
   [126.8338,37.2985,'도움','home',   60], [126.8352,37.2962,'도움','bolt',   9],
   [126.8369,37.2958,'도움','plus',  300], [126.8382,37.2972,'도움','home',  15],
   [126.8396,37.2949,'도움','drop',   45], [126.8408,37.2965,'도움','gear', 120],
-  [126.8276,37.2944,'저장','pill',   30], [126.8299,37.2931,'저장','home',  70],
+  [126.8276,37.2944,'저장','food',   30], [126.8299,37.2931,'저장','home',  70],
   [126.8324,37.2938,'저장','plus',    8], [126.8347,37.2925,'저장','drop', 200],
   [126.8361,37.2941,'저장','bolt',   17], [126.8238,37.2968,'저장','gear',  95],
-  [126.8252,37.2921,'저장','home',  260], [126.8415,37.2932,'저장','pill',  11],
-  [126.8372,37.3028,'위험','ban',     2], [126.8384,37.3034,'위험','alert', 6],
-  [126.8391,37.3021,'위험','ban',    19], [126.8378,37.3012,'위험','alert',35],
-  [126.8243,37.2956,'위험','alert', 150], [126.8307,37.2952,'위험','ban',   27],
-  [126.8266,37.2908,'위험','ban',     4], [126.8402,37.2902,'위험','alert',88],
+  [126.8252,37.2921,'저장','home',  260], [126.8415,37.2932,'저장','food',  11],
+  [126.8372,37.3028,'위험','ban',     2], [126.8384,37.3034,'위험','toxic', 6],
+  [126.8391,37.3021,'위험','ban',    19], [126.8378,37.3012,'위험','toxic',35],
+  [126.8243,37.2956,'위험','toxic', 150], [126.8307,37.2952,'위험','ban',   27],
+  [126.8266,37.2908,'위험','ban',     4], [126.8402,37.2902,'위험','toxic',88],
   [126.8419,37.2918,'위험','ban',   210], [126.8225,37.3002,'위험','alert',14],
 
   /* 넓은 범위로 흩어진 기록 10개 */
@@ -787,7 +835,7 @@ const RAW = [
   [126.8094,37.2718,'저장','home',  38], [126.8803,37.2841,'도움','bolt', 165],
   [126.7889,37.2863,'위험','ban',   21], [126.8612,37.3319,'도움','plus',  3],
   [126.8167,37.3298,'저장','gear', 240], [126.8458,37.2693,'위험','alert',66],
-  [126.8886,37.3071,'도움','home',  13], [126.7934,37.3024,'저장','pill', 102],
+  [126.8886,37.3071,'도움','home',  13], [126.7934,37.3024,'저장','food', 102],
 
   /* 더 넓은 지역에 골고루 흩어진 기록 30개 */
   [126.8505,37.3210,'위험','ban',   13], [126.8749,37.2926,'위험','alert',140],
@@ -800,7 +848,7 @@ const RAW = [
   [126.9016,37.2931,'위험','alert', 18], [126.8219,37.2497,'도움','gear', 190],
   [126.8485,37.2744,'저장','home',  18], [126.7769,37.3149,'도움','bolt',  13],
   [126.8727,37.3301,'도움','gear',   9], [126.8203,37.2931,'위험','alert',  6],
-  [126.9006,37.3111,'저장','pill',  13], [126.8639,37.3107,'도움','drop', 330],
+  [126.9006,37.3111,'저장','food',  13], [126.8639,37.3107,'도움','drop', 330],
   [126.8395,37.2558,'도움','gear',   4], [126.8528,37.3005,'위험','ban',    4],
   [126.8212,37.3348,'위험','ban',   24], [126.8031,37.3137,'위험','ban',   18],
   [126.9014,37.2778,'저장','bolt',   6], [126.8250,37.2750,'위험','alert',250],
@@ -853,7 +901,7 @@ function init(){
     el.className = 'rec' + (r.type === '위험' ? ' red' : '');
     el.innerHTML =
       '<div class="dot"></div>' +
-      '<div class="ico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none">' + ICONS[r.icon] + '</svg></div>' +
+      '<div class="ico">' + iconSVG(r, 32) + '</div>' +
       '<div class="hit"></div>';
     el.addEventListener('click', e => { e.stopPropagation(); selectRecord(i); });
     const m = new mapboxgl.Marker({ element: el }).setLngLat([r.lng, r.lat]).addTo(map);
@@ -864,12 +912,15 @@ function init(){
   meIcon.classList.add('ready');
 
   applyZoomState();
+  updateArrow();
   positionOverlay();
   applyFilter();
 
   map.on('zoom', applyZoomState);
   map.on('move', onMove);
   map.on('rotate', onRotate);
+  /* 손으로 지도를 직접 돌리면 방향 따라가기를 끔 */
+  map.on('rotatestart', () => { if(!selfRotating) setFollow(false); });
   map.on('movestart', onMoveStart);
   map.on('moveend', onMoveEnd);
   map.on('click', () => { if(mode === 'selected') clearSelection(); });
@@ -969,6 +1020,7 @@ function toggleMeLabel(){
 }
 
 function onMoveStart(){
+  if(selfRotating) return;        /* 나침반이 돌린 회전은 지도 이동으로 보지 않음 */
   dragging = true;
   if(mode === 'idle' || mode === 'pin'){
     mode = 'pin';
@@ -979,6 +1031,7 @@ function onMoveStart(){
 }
 function onMove(){ positionOverlay(); }
 function onMoveEnd(){
+  if(selfRotating) return;
   dragging = false;
   if(mode === 'pin'){
     distLabel.classList.remove('show');
@@ -986,11 +1039,80 @@ function onMoveEnd(){
   }
   positionOverlay();
 }
+/* ===== 나침반 — 기기의 실제 방위를 읽어 내 위치 화살표를 회전 ===== */
+let deviceHeading = null;     // 기기가 향한 방위(도). 권한이 없거나 미지원이면 null
+
+/* 화살표가 이미 정북을 향해 그려져 있어 보정 없음 */
+const ARROW_OFFSET = 0;
+
 function onRotate(){
   const b = -map.getBearing();
   document.querySelector('#compass svg').style.transform = 'rotate(' + b + 'deg)';
-  const arrow = meIcon.querySelector('.me-arrow');
-  if(arrow) arrow.style.transform = 'rotate(' + b + 'deg)';
+  updateArrow();
+}
+
+function updateArrow(){
+  const arrow = document.getElementById('meArrow');
+  if(!arrow || !map) return;
+  /* 방위를 알면 실제로 바라보는 쪽, 모르면 지도의 북쪽을 가리킴 */
+  const deg = (deviceHeading === null)
+    ? -map.getBearing()
+    : deviceHeading - map.getBearing();
+  arrow.setAttribute('transform',
+    'rotate(' + (deg + ARROW_OFFSET).toFixed(2) + ' 18 18)');
+}
+
+/* 내가 보는 방향을 화면 위쪽으로 — 지도를 방위에 맞춰 돌림 */
+let followHeading = true;    // 나침반 버튼으로 끄고 켤 수 있음
+let selfRotating  = false;   // 코드가 돌린 회전인지 구분
+
+function applyHeadingToMap(){
+  if(!map || !followHeading || deviceHeading === null) return;
+  if(dragging) return;                        // 손으로 지도를 만지는 중엔 두기
+  const d = ((deviceHeading - map.getBearing() + 540) % 360) - 180;
+  if(Math.abs(d) < 0.8) return;
+  selfRotating = true;
+  map.setBearing(deviceHeading);
+  selfRotating = false;
+}
+
+function onOrientation(e){
+  let h = null;
+  if(typeof e.webkitCompassHeading === 'number'){
+    h = e.webkitCompassHeading;                  // iOS — 이미 진북 기준
+  } else if(e.absolute && typeof e.alpha === 'number'){
+    h = 360 - e.alpha;                           // 그 외 기기
+  }
+  if(h === null || isNaN(h)) return;
+  /* 값이 떨릴 때 아이콘이 덜덜 떨리지 않도록 조금 완만하게 */
+  if(deviceHeading === null){
+    deviceHeading = h;
+  } else {
+    let d = ((h - deviceHeading + 540) % 360) - 180;
+    if(Math.abs(d) < 1.2) return;
+    deviceHeading = (deviceHeading + d * 0.35 + 360) % 360;
+  }
+  applyHeadingToMap();
+  updateArrow();
+}
+
+let compassAsked = false;
+function enableCompass(){
+  if(compassAsked) return;
+  compassAsked = true;
+  const start = () => {
+    window.addEventListener('deviceorientationabsolute', onOrientation, true);
+    window.addEventListener('deviceorientation', onOrientation, true);
+    setTimeout(() => setFollow(followHeading), 400);   /* 버튼 표시 갱신 */
+  };
+  const DOE = window.DeviceOrientationEvent;
+  if(DOE && typeof DOE.requestPermission === 'function'){
+    DOE.requestPermission()                       // iOS 13+ — 사용자 동작에서만 호출 가능
+      .then(res => { if(res === 'granted') start(); })
+      .catch(() => {});
+  } else {
+    start();
+  }
 }
 
 function drawLine(a, b, on){
@@ -1076,7 +1198,7 @@ const sheetScroll = document.getElementById('sheetScroll');
 let sheetState = 'hidden';
 const H     = () => phone.clientHeight;
 const peekH = () => sheetTop.offsetHeight;
-const tabH  = () => document.querySelector('.tabbar').offsetHeight + 20;
+const tabH  = () => document.querySelector('.tabbar').offsetHeight;
 const peekY = () => H() - peekH() - tabH();
 
 function setSheet(s){
@@ -1171,8 +1293,7 @@ function fillSheet(r){
   document.getElementById('fClimate').textContent = r.climate;
 
   const badge = document.getElementById('pBadge');
-  badge.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none">' + ICONS[r.icon] + '</svg>';
-  badge.classList.toggle('red', red);
+  badge.innerHTML = iconSVG(r, 24);
   document.getElementById('hDot').classList.toggle('red', red);
 }
 
@@ -1340,9 +1461,24 @@ document.getElementById('navToggle').addEventListener('click', function(){
 document.getElementById('fabLocate').addEventListener('click', () => {
   map.easeTo({ center:[ME.lng, ME.lat], zoom:13.6, bearing:0, duration:700 });
 });
+/* 나침반 버튼 — 방향 따라가기 켜고 끄기 (센서가 없으면 북쪽 정렬) */
+function setFollow(on){
+  followHeading = on;
+  document.getElementById('compass').classList.toggle('following', on && deviceHeading !== null);
+  if(!on && map) map.easeTo({ bearing:0, pitch:0, duration:500 });
+}
+
 document.getElementById('compass').addEventListener('click', () => {
-  map.easeTo({ bearing:0, pitch:0, duration:500 });
+  enableCompass();                 /* 첫 탭에서 방위 센서 권한을 요청 */
+  if(deviceHeading === null){
+    map.easeTo({ bearing:0, pitch:0, duration:500 });
+  } else {
+    setFollow(!followHeading);
+    if(followHeading) applyHeadingToMap();
+  }
 });
+/* 화면 아무 곳이나 처음 만졌을 때도 한 번 시도 */
+document.addEventListener('pointerdown', enableCompass, { once:true });
 document.querySelectorAll('.tab').forEach(t => {
   t.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
