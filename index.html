@@ -1071,20 +1071,19 @@ function onOrientation(e){
   updateArrow();
 }
 
-let compassAsked = false;
+let compassReady = false;          // 센서 수신이 실제로 시작됐는지
 function enableCompass(){
-  if(compassAsked) return;
-  compassAsked = true;
+  if(compassReady) return;         // 실패했다면 다시 시도할 수 있게 열어 둠
   const start = () => {
+    compassReady = true;
     window.addEventListener('deviceorientationabsolute', onOrientation, true);
     window.addEventListener('deviceorientation', onOrientation, true);
-    setTimeout(() => setFollow(followHeading), 400);   /* 버튼 표시 갱신 */
   };
   const DOE = window.DeviceOrientationEvent;
   if(DOE && typeof DOE.requestPermission === 'function'){
-    DOE.requestPermission()                       // iOS 13+ — 사용자 동작에서만 호출 가능
+    DOE.requestPermission()        // iOS 13+ — 사용자가 누른 직후에만 호출 가능
       .then(res => { if(res === 'granted') start(); })
-      .catch(() => {});
+      .catch(() => {});            // 실패해도 버튼을 다시 누르면 재시도
   } else {
     start();
   }
@@ -1467,7 +1466,7 @@ document.getElementById('compass').addEventListener('click', () => {
   }
 });
 /* 화면 아무 곳이나 처음 만졌을 때도 한 번 시도 */
-document.addEventListener('pointerdown', enableCompass, { once:true });
+document.addEventListener('click', enableCompass, { once:true });
 document.querySelectorAll('.tab').forEach(t => {
   t.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
