@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="STIPPLE">
 <meta name="theme-color" content="#F8F4EE">
 <title>STIPPLE</title>
@@ -73,30 +73,6 @@
     font-size:14px;line-height:1.75;color:#8F8F88;
   }
 
-  /* ---------- 모바일: 화면 전체 ---------- */
-  @media (max-width:700px), (display-mode:standalone){
-    /* body 높이는 '툴바가 접힌 큰 화면' 기준이라, 가운데 정렬을 두면
-       현재 보이는 높이(dvh)와의 차이만큼 위아래에 베이지 여백이 생김 */
-    html,body{height:100dvh;overflow:hidden;}
-    body{padding:0;gap:0;background:var(--beige);display:block;}
-    .guide{display:none;}
-    .stage{width:100vw !important;height:100dvh !important;}
-    .phone{
-      width:100vw;height:100dvh;
-      border-radius:0;box-shadow:none;transform:none !important;
-      --safe-bottom:env(safe-area-inset-bottom, 0px);
-      --tabh:72px;                       /* 실제 기기에서는 탭바를 낮게 */
-    }
-    .topbar,.navbar{top:12px;}         /* 가짜 상태바가 없으니 위로 붙임 */
-  }
-  /* 홈 화면에 추가해 실행할 때만 노치 아래로 내림 */
-  @media (display-mode:standalone){
-    .topbar,.navbar{top:calc(env(safe-area-inset-top, 0px) + 10px);}
-  }
-  body.is-mobile .topbar,
-  body.is-mobile .navbar{top:12px;}
-  body.is-mobile .phone{--tabh:72px;}
-  body.is-mobile{display:block;padding:0;gap:0;height:100dvh;overflow:hidden;}
 
 
   /* ---------- 지도 ---------- */
@@ -437,6 +413,27 @@
   .popup p{margin-top:8px;font-size:14px;color:#8E8A82;letter-spacing:-.3px;line-height:1.5;}
   .popup .pbtns{display:flex;gap:10px;margin-top:16px;}
   .popup .btn{height:44px;font-size:15px;}
+
+  /* ---------- 모바일: 화면 전체 ----------
+     뒤쪽 규칙이 이기므로 스타일시트 맨 끝에 둬야 확실히 적용됨 */
+  @media (max-width:700px), (display-mode:standalone){
+    html,body{height:100dvh;overflow:hidden;}
+    body{padding:0;gap:0;background:var(--beige);display:block;}
+    .guide{display:none;}
+    .stage{width:100vw !important;height:100dvh !important;}
+    .phone{
+      width:100vw;height:100dvh;
+      border-radius:0;box-shadow:none;transform:none !important;
+      --safe-bottom:env(safe-area-inset-bottom, 0px);
+      --tabh:72px;
+    }
+    .topbar,.navbar{top:calc(env(safe-area-inset-top, 0px) + 12px);}
+  }
+  /* 터치 기기면 화면 폭과 무관하게 같은 규칙 적용 */
+  body.is-mobile{display:block;padding:0;gap:0;height:100dvh;overflow:hidden;}
+  body.is-mobile .phone{--tabh:72px;}
+  body.is-mobile .topbar,
+  body.is-mobile .navbar{top:calc(env(safe-area-inset-top, 0px) + 12px);}
 </style>
 </head>
 <body>
