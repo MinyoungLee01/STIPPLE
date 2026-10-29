@@ -891,7 +891,7 @@ function init(){
   map.on('move', onMove);
   map.on('rotate', onRotate);
   /* 손으로 지도를 직접 돌리면 방향 따라가기를 끔 */
-  map.on('rotatestart', () => { if(!selfRotating) setFollow(false); });
+  map.on('rotatestart', () => { if(!selfRotating && !autoMove) setFollow(false); });
   map.on('movestart', onMoveStart);
   map.on('moveend', onMoveEnd);
   map.on('click', () => { if(mode === 'selected') clearSelection(); });
@@ -1446,20 +1446,31 @@ document.getElementById('fabLocate').addEventListener('click', () => {
   map.easeTo(opt);
   setTimeout(() => { autoMove = false; positionOverlay(); }, 780);
 });
-/* 나침반 버튼 — 방향 따라가기 켜고 끄기 (센서가 없으면 북쪽 정렬) */
-function setFollow(on){
+/* 방향 따라가기 켜고 끄기.
+   resetNorth 가 true 일 때만 북쪽으로 되돌림 — 손으로 돌릴 때는 그대로 둬야
+   회전이 막히지 않음 */
+function setFollow(on, resetNorth){
   followHeading = on;
   document.getElementById('compass').classList.toggle('following', on && deviceHeading !== null);
-  if(!on && map) map.easeTo({ bearing:0, pitch:0, duration:500 });
+  if(!on && resetNorth && map){
+    autoMove = true;
+    map.easeTo({ bearing:0, pitch:0, duration:500 });
+    setTimeout(() => { autoMove = false; }, 560);
+  }
 }
 
+/* 나침반 버튼 — 한 번 누르면 북쪽 정렬, 센서가 있으면 따라가기 토글 */
 document.getElementById('compass').addEventListener('click', () => {
   enableCompass();                 /* 첫 탭에서 방위 센서 권한을 요청 */
   if(deviceHeading === null){
+    autoMove = true;
     map.easeTo({ bearing:0, pitch:0, duration:500 });
+    setTimeout(() => { autoMove = false; }, 560);
+  } else if(followHeading){
+    setFollow(false, true);        /* 끄면서 북쪽으로 */
   } else {
-    setFollow(!followHeading);
-    if(followHeading) applyHeadingToMap();
+    setFollow(true);
+    applyHeadingToMap();
   }
 });
 /* 화면 아무 곳이나 처음 만졌을 때도 한 번 시도 */
