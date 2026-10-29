@@ -75,7 +75,10 @@
 
   /* ---------- 모바일: 화면 전체 ---------- */
   @media (max-width:700px), (display-mode:standalone){
-    body{padding:0;gap:0;background:var(--beige);}
+    /* body 높이는 '툴바가 접힌 큰 화면' 기준이라, 가운데 정렬을 두면
+       현재 보이는 높이(dvh)와의 차이만큼 위아래에 베이지 여백이 생김 */
+    html,body{height:100dvh;overflow:hidden;}
+    body{padding:0;gap:0;background:var(--beige);display:block;}
     .guide{display:none;}
     .stage{width:100vw !important;height:100dvh !important;}
     .phone{
@@ -93,6 +96,7 @@
   body.is-mobile .topbar,
   body.is-mobile .navbar{top:12px;}
   body.is-mobile .phone{--tabh:72px;}
+  body.is-mobile{display:block;padding:0;gap:0;height:100dvh;overflow:hidden;}
 
 
   /* ---------- 지도 ---------- */
@@ -990,7 +994,7 @@ function toggleMeLabel(){
 }
 
 function onMoveStart(){
-  if(selfRotating) return;        /* 나침반이 돌린 회전은 지도 이동으로 보지 않음 */
+  if(selfRotating || autoMove) return;   /* 코드가 움직인 건 지도 이동으로 보지 않음 */
   dragging = true;
   if(mode === 'idle' || mode === 'pin'){
     mode = 'pin';
@@ -1001,7 +1005,7 @@ function onMoveStart(){
 }
 function onMove(){ positionOverlay(); }
 function onMoveEnd(){
-  if(selfRotating) return;
+  if(selfRotating || autoMove) return;
   dragging = false;
   if(mode === 'pin'){
     distLabel.classList.remove('show');
@@ -1035,6 +1039,7 @@ function updateArrow(){
 /* 내가 보는 방향을 화면 위쪽으로 — 지도를 방위에 맞춰 돌림 */
 let followHeading = true;    // 나침반 버튼으로 끄고 켤 수 있음
 let selfRotating  = false;   // 코드가 돌린 회전인지 구분
+let autoMove      = false;   // 버튼으로 움직이는 중인지 구분
 
 function applyHeadingToMap(){
   if(!map || !followHeading || deviceHeading === null) return;
@@ -1430,7 +1435,20 @@ document.getElementById('navToggle').addEventListener('click', function(){
 
 /* ===================== 버튼 ===================== */
 document.getElementById('fabLocate').addEventListener('click', () => {
-  map.easeTo({ center:[ME.lng, ME.lat], zoom:13.6, bearing:0, duration:700 });
+  /* 내 위치로 돌아갈 때는 중앙 핀·점선·좌표를 모두 걷어냄 */
+  if(mode === 'pin' || mode === 'idle'){
+    mode = 'idle';
+    meLabelOn = false;
+    centerPin.classList.remove('show');
+    meLabel.classList.remove('show');
+    pinLabel.classList.remove('show');
+    distLabel.classList.remove('show');
+  }
+  const opt = { center:[ME.lng, ME.lat], zoom:13.6, duration:700 };
+  if(!(followHeading && deviceHeading !== null)) opt.bearing = 0;
+  autoMove = true;
+  map.easeTo(opt);
+  setTimeout(() => { autoMove = false; positionOverlay(); }, 780);
 });
 /* 나침반 버튼 — 방향 따라가기 켜고 끄기 (센서가 없으면 북쪽 정렬) */
 function setFollow(on){
