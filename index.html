@@ -84,8 +84,6 @@
       --safe-bottom:env(safe-area-inset-bottom, 0px);
       --tabh:72px;                       /* 실제 기기에서는 탭바를 낮게 */
     }
-    .statusbar{display:none;}            /* 기기의 진짜 상태바를 사용 */
-    .home-indicator{display:none;}       /* 기기의 진짜 홈 인디케이터를 사용 */
     .topbar,.navbar{top:12px;}         /* 가짜 상태바가 없으니 위로 붙임 */
   }
   /* 홈 화면에 추가해 실행할 때만 노치 아래로 내림 */
@@ -94,9 +92,6 @@
   }
   body.is-mobile .topbar,
   body.is-mobile .navbar{top:12px;}
-  /* 화면 크기와 상관없이 터치 기기면 가짜 상태바·홈바를 숨김 */
-  body.is-mobile .statusbar,
-  body.is-mobile .home-indicator{display:none;}
   body.is-mobile .phone{--tabh:72px;}
 
 
@@ -109,15 +104,6 @@
     color:var(--deep-green);font-size:15px;font-weight:500;letter-spacing:-.3px;
     line-height:1.7;padding:40px;z-index:50;
   }
-
-  /* ---------- 상태바 ---------- */
-  .statusbar{
-    position:absolute;top:0;left:0;right:0;height:54px;z-index:40;
-    display:flex;align-items:center;justify-content:space-between;
-    padding:14px 28px 0;pointer-events:none;color:var(--black);
-  }
-  .statusbar .time{font-size:16px;font-weight:600;letter-spacing:-.2px;}
-  .statusbar .icons{display:flex;align-items:center;gap:6px;}
 
   /* ---------- 상단 칩 ---------- */
   .topbar{
@@ -316,11 +302,6 @@
     color:#B9B6B0;transition:color .18s ease;
   }
   .tab.on{color:var(--deep-green);}
-  .home-indicator{
-    position:absolute;bottom:calc(9px + var(--safe-bottom));left:50%;
-    transform:translateX(-50%);
-    width:140px;height:5px;border-radius:3px;background:var(--black);opacity:.85;
-  }
 
   /* ---------- 하단 시트 (접힘 ↔ 펼침이 하나로 이어짐) ---------- */
   .sheet{
@@ -528,16 +509,6 @@
   <div class="label tail num" id="pinLabel"></div>
   <div class="label num" id="distLabel"></div>
 
-  <!-- 상태바 -->
-  <div class="statusbar">
-    <span class="time">1:23</span>
-    <span class="icons">
-      <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
-      <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 11.5 5.6 8.8a3.6 3.6 0 0 1 4.8 0L8 11.5Zm-4.4-5a7 7 0 0 1 8.8 0l-1.5 1.7a4.8 4.8 0 0 0-5.8 0L3.6 6.5ZM.9 3.4a11 11 0 0 1 14.2 0l-1.5 1.7a8.8 8.8 0 0 0-11.2 0L.9 3.4Z"/></svg>
-      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="18" height="8" rx="2" fill="currentColor"/><path d="M23 4.2v3.6c.9-.3 1.4-.9 1.4-1.8s-.5-1.5-1.4-1.8Z" fill="currentColor" opacity=".4"/></svg>
-    </span>
-  </div>
-
   <!-- 상단 칩 -->
   <div class="topbar">
     <div class="chips" id="typeChips">
@@ -622,7 +593,6 @@
     <button class="tab">
       <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="8" r="3.8"/><path d="M4.5 20.2a7.5 7.5 0 0 1 15 0"/></svg>
     </button>
-    <div class="home-indicator"></div>
   </nav>
 
   <!-- ===== 하단 시트 ===== -->
@@ -1124,6 +1094,7 @@ function drawLine(a, b, on){
 function positionOverlay(){
   if(!map) return;
   const mePt = map.project([ME.lng, ME.lat]);
+  meLabel.textContent = fmt(ME.lat) + ', ' + fmt(ME.lng);   /* 비어 있으면 빈 말풍선이 보임 */
 
   meIcon.style.left = mePt.x + 'px';
   meIcon.style.top  = mePt.y + 'px';
