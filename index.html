@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="STIPPLE">
-<meta name="theme-color" content="#F8F4EE">
+<meta name="theme-color" content="#FEFEFE">
 <title>STIPPLE</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -418,7 +418,10 @@
      뒤쪽 규칙이 이기므로 스타일시트 맨 끝에 둬야 확실히 적용됨 */
   @media (max-width:700px), (display-mode:standalone){
     html,body{height:100%;overflow:hidden;}
-    body{padding:0;gap:0;background:var(--beige);display:block;}
+    /* iOS 는 웹뷰가 닿지 못하는 가장자리를 페이지 배경색으로 칠함.
+       그 색을 하단 탭바와 같은 흰색으로 맞춰 띠가 눈에 띄지 않게 함 */
+    html,body{background:var(--white);}
+    body{padding:0;gap:0;display:block;}
     .guide{display:none;}
     .stage{width:auto !important;height:auto !important;}
     /* vh·dvh 는 기기마다 상태바를 포함하기도 빼기도 해서 위아래에 틈이 생김.
@@ -432,6 +435,7 @@
     .topbar,.navbar{top:calc(env(safe-area-inset-top, 0px) + 12px);}
   }
   /* 터치 기기면 화면 폭과 무관하게 같은 규칙 적용 */
+  body.is-mobile,html:has(body.is-mobile){background:var(--white);}
   body.is-mobile{display:block;padding:0;gap:0;height:100%;overflow:hidden;}
   body.is-mobile .stage{width:auto !important;height:auto !important;}
   body.is-mobile .phone{
@@ -442,6 +446,11 @@
   }
   body.is-mobile .topbar,
   body.is-mobile .navbar{top:calc(env(safe-area-inset-top, 0px) + 12px);}
+  /* 탭바가 낮아지면 아이콘 여백도 줄여 잘리지 않게 */
+  .phone.compact-tabs .tabbar{padding-top:9px;}
+  .phone.compact-tabs .tab{padding:5px 0;}
+  .phone.compact-tabs .tab svg{width:23px;height:23px;}
+
   /* 홈 화면 앱 — 주소창이 없어 화면 전체가 고정이므로 100vh 가 정확함 */
   @media (display-mode:standalone){
     .phone{width:100vw !important;height:100vh !important;top:0 !important;left:0 !important;}
@@ -1495,6 +1504,31 @@ document.querySelectorAll('.tab').forEach(t => {
 });
 
 /* ===================== 프레임 크기 ===================== */
+/* env(safe-area-inset-bottom) 값을 실제로 재기 위한 숨은 요소 */
+const sabProbe = document.createElement('div');
+sabProbe.style.cssText =
+  'position:fixed;left:-9999px;bottom:0;width:1px;' +
+  'height:env(safe-area-inset-bottom, 0px);pointer-events:none;';
+document.body.appendChild(sabProbe);
+
+/* 화면 밖으로 남는 띠만큼 탭바를 줄여, 흰 영역 전체 높이를 원래대로 맞춤 */
+const TAB_BASE = 72;
+function fitTabBar(){
+  if(!isStandalone()){
+    phone.style.removeProperty('--tabh');
+    phone.style.removeProperty('--safe-bottom');
+    phone.classList.remove('compact-tabs');
+    return;
+  }
+  const sab  = Math.round(sabProbe.getBoundingClientRect().height);
+  const gap  = Math.max(0, Math.round(screen.height - window.innerHeight));
+  const want = TAB_BASE + sab;                       // 원래 흰 영역 높이
+  const h    = Math.max(42, Math.min(want, want - gap));
+  phone.style.setProperty('--tabh', h + 'px');
+  phone.style.setProperty('--safe-bottom', '0px');   // 띠가 그 자리를 대신함
+  phone.classList.toggle('compact-tabs', h < 60);
+}
+
 function isStandalone(){
   return window.navigator.standalone === true ||
          window.matchMedia('(display-mode:standalone)').matches;
@@ -1514,8 +1548,10 @@ function fitPhone(){
     if(isStandalone()){
       phone.style.width = phone.style.height = '';
       phone.style.top = phone.style.left = '';
+      fitTabBar();
       return;
     }
+    fitTabBar();
     /* 브라우저로 볼 때는 주소창 때문에 보이는 높이가 계속 바뀌므로
        visualViewport 가 알려주는 실제 영역을 그대로 사용 */
     const vv = window.visualViewport;
@@ -1527,6 +1563,7 @@ function fitPhone(){
   }
   phone.style.width = phone.style.height = '';
   phone.style.top = phone.style.left = '';
+  fitTabBar();
   const byHeight = (window.innerHeight - 64) / 874;
   const byWidth  = (window.innerWidth - 420) / 402;
   const s = Math.max(0.35, Math.min(MAX_SCALE, byHeight, byWidth));
